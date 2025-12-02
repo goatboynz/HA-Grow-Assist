@@ -1,279 +1,94 @@
 # =============================================================================
-# GROW ROOM MANAGER - Complete Dashboard
+# GROW ROOM MANAGER - Simple Dashboard
 # =============================================================================
 # 
-# INSTALLATION:
-# 1. Copy this file to your HA config folder
-# 2. In HA: Settings > Dashboards > Add Dashboard > "Grow Rooms"
-# 3. Edit dashboard > Raw configuration editor > Paste this content
+# NO CONFIGURATION NEEDED! Just add rooms via:
+# Settings > Devices & Services > Add Integration > Grow Room Manager
 #
 # =============================================================================
 
-title: Grow Room Manager
+title: Grow Rooms
 views:
   # ===========================================================================
-  # SETUP PAGE - Configure everything here first
+  # OVERVIEW - All Rooms at a Glance
   # ===========================================================================
-  - title: "⚙️ Setup"
-    path: setup
-    icon: mdi:cog
+  - title: "Overview"
+    path: overview
+    icon: mdi:view-dashboard
     cards:
       - type: markdown
         content: |
-          # 🌿 Grow Room Manager Setup
+          # 🌿 Grow Room Manager
           
-          Configure your rooms below. Once set up, workers can use the simple room tabs.
+          **To add a room:** Settings → Devices & Services → Add Integration → Grow Room Manager
           
-          ---
+          **To change start date:** Click Configure on the room's integration entry
 
-      # ----- ROOM F1 SETUP -----
-      - type: vertical-stack
-        title: "🏠 Room F1 Configuration"
+      # Room Status Cards
+      - type: horizontal-stack
         cards:
-          - type: entities
-            entities:
-              - type: section
-                label: "Required Settings"
-              - entity: input_datetime.f1_start_date
-                name: "📅 Start Date (Day 1 of Flower)"
-              - entity: input_select.f1_calendar
-                name: "📆 Calendar Entity"
-              - entity: input_select.f1_todo
-                name: "✅ Todo List Entity"
-              - type: section
-                label: "Optional Settings"
-              - entity: input_select.f1_camera
-                name: "📷 Camera (for snapshots)"
-              - entity: input_text.f1_strain
-                name: "🌱 Strain Name"
-              - entity: input_number.f1_plant_count
-                name: "🪴 Plant Count"
+          - type: entity
+            entity: sensor.flower_room_1_grow_status
+            name: "F1"
+          - type: entity
+            entity: sensor.flower_room_2_grow_status
+            name: "F2"
+          - type: entity
+            entity: sensor.flower_room_3_grow_status
+            name: "F3"
 
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: "Generate 84-Day Schedule"
-                icon: mdi:calendar-plus
-                icon_height: 30px
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.generate_tasks
-                  service_data:
-                    room_id: "f1"
-                    start_date: "{{ states('input_datetime.f1_start_date') }}"
-                    calendar_entity: "{{ states('input_select.f1_calendar') }}"
-                    todo_entity: "{{ states('input_select.f1_todo') }}"
-                  confirmation:
-                    text: "Generate 35 tasks for F1? This will add events to your calendar and todo list."
-              
-              - type: button
-                name: "Set Start to Today"
-                icon: mdi:calendar-today
-                icon_height: 30px
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.set_start_date
-                  service_data:
-                    room_id: "f1"
-                    start_date: "{{ now().strftime('%Y-%m-%d') }}"
-
-      # ----- ROOM F2 SETUP -----
-      - type: vertical-stack
-        title: "🏠 Room F2 Configuration"
+      # Progress
+      - type: horizontal-stack
         cards:
-          - type: entities
-            entities:
-              - type: section
-                label: "Required Settings"
-              - entity: input_datetime.f2_start_date
-                name: "📅 Start Date (Day 1 of Flower)"
-              - entity: input_select.f2_calendar
-                name: "📆 Calendar Entity"
-              - entity: input_select.f2_todo
-                name: "✅ Todo List Entity"
-              - type: section
-                label: "Optional Settings"
-              - entity: input_select.f2_camera
-                name: "📷 Camera (for snapshots)"
-              - entity: input_text.f2_strain
-                name: "🌱 Strain Name"
-              - entity: input_number.f2_plant_count
-                name: "🪴 Plant Count"
-
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: "Generate 84-Day Schedule"
-                icon: mdi:calendar-plus
-                icon_height: 30px
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.generate_tasks
-                  service_data:
-                    room_id: "f2"
-                    start_date: "{{ states('input_datetime.f2_start_date') }}"
-                    calendar_entity: "{{ states('input_select.f2_calendar') }}"
-                    todo_entity: "{{ states('input_select.f2_todo') }}"
-                  confirmation:
-                    text: "Generate 35 tasks for F2?"
-
-              - type: button
-                name: "Set Start to Today"
-                icon: mdi:calendar-today
-                icon_height: 30px
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.set_start_date
-                  service_data:
-                    room_id: "f2"
-                    start_date: "{{ now().strftime('%Y-%m-%d') }}"
-
-      # ----- ROOM F3 SETUP -----
-      - type: vertical-stack
-        title: "🏠 Room F3 Configuration"
-        cards:
-          - type: entities
-            entities:
-              - type: section
-                label: "Required Settings"
-              - entity: input_datetime.f3_start_date
-                name: "📅 Start Date (Day 1 of Flower)"
-              - entity: input_select.f3_calendar
-                name: "📆 Calendar Entity"
-              - entity: input_select.f3_todo
-                name: "✅ Todo List Entity"
-              - type: section
-                label: "Optional Settings"
-              - entity: input_select.f3_camera
-                name: "📷 Camera (for snapshots)"
-              - entity: input_text.f3_strain
-                name: "🌱 Strain Name"
-              - entity: input_number.f3_plant_count
-                name: "🪴 Plant Count"
-
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: "Generate 84-Day Schedule"
-                icon: mdi:calendar-plus
-                icon_height: 30px
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.generate_tasks
-                  service_data:
-                    room_id: "f3"
-                    start_date: "{{ states('input_datetime.f3_start_date') }}"
-                    calendar_entity: "{{ states('input_select.f3_calendar') }}"
-                    todo_entity: "{{ states('input_select.f3_todo') }}"
-                  confirmation:
-                    text: "Generate 35 tasks for F3?"
-
-              - type: button
-                name: "Set Start to Today"
-                icon: mdi:calendar-today
-                icon_height: 30px
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.set_start_date
-                  service_data:
-                    room_id: "f3"
-                    start_date: "{{ now().strftime('%Y-%m-%d') }}"
-
-      # ----- HELPER SETUP INSTRUCTIONS -----
-      - type: markdown
-        title: "📋 First Time Setup"
-        content: |
-          ## Required Helpers
-          
-          Add this to your `configuration.yaml` and restart:
-          
-          ```yaml
-          # See configuration_example.yaml for full config
-          input_datetime:
-            f1_start_date:
-              name: "F1 Start Date"
-              has_date: true
-              has_time: false
-          
-          input_select:
-            f1_calendar:
-              name: "F1 Calendar"
-              options:
-                - calendar.grow_calendar
-                - calendar.local_calendar
-            f1_todo:
-              name: "F1 Todo"
-              options:
-                - todo.f1_tasks
-                - todo.grow_tasks
-          ```
-          
-          ## Create Calendar & Todo Lists
-          
-          1. **Settings** → **Devices & Services** → **Add Integration**
-          2. Search for **"Local Calendar"** → Create "Grow Calendar"
-          3. Search for **"Local To-do"** → Create lists for each room
+          - type: gauge
+            entity: sensor.flower_room_1_grow_progress
+            name: "F1 Progress"
+            min: 0
+            max: 100
+            severity:
+              green: 80
+              yellow: 50
+              red: 0
+          - type: gauge
+            entity: sensor.flower_room_2_grow_progress
+            name: "F2 Progress"
+            min: 0
+            max: 100
+          - type: gauge
+            entity: sensor.flower_room_3_grow_progress
+            name: "F3 Progress"
+            min: 0
+            max: 100
 
   # ===========================================================================
-  # ROOM F1 - Worker View (Simple)
+  # ROOM F1
   # ===========================================================================
   - title: "F1"
     path: f1
     icon: mdi:numeric-1-circle
     cards:
-      # Status Overview
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              # 🌿 Flower Room 1
-              {% set day = state_attr('sensor.flower_room_1_grow_status', 'current_day') %}
-              {% set phase = state_attr('sensor.flower_room_1_grow_status', 'phase') %}
-              {% if day %}
-              ## Day {{ day }} - {{ phase }} Phase
-              {% else %}
-              ## Not Started
-              Set a start date in the Setup tab to begin tracking.
-              {% endif %}
-
-          # Quick Stats
-          - type: horizontal-stack
-            cards:
-              - type: entity
-                entity: sensor.flower_room_1_grow_status
-                name: "Status"
-              - type: entity
-                entity: sensor.flower_room_1_grow_progress
-                name: "Progress"
-
-      # Current Targets Card
-      - type: entities
-        title: "🎯 Current Targets"
-        entities:
-          - type: attribute
-            entity: sensor.flower_room_1_grow_status
-            attribute: recommended_ec
-            name: "Target EC"
-            icon: mdi:water
-          - type: attribute
-            entity: sensor.flower_room_1_grow_status
-            attribute: target_dryback
-            name: "Target Dryback"
-            icon: mdi:water-percent
-          - type: attribute
-            entity: sensor.flower_room_1_grow_status
-            attribute: target_humidity
-            name: "Target Humidity"
-            icon: mdi:water-outline
-          - type: attribute
-            entity: sensor.flower_room_1_grow_status
-            attribute: target_vpd
-            name: "Target VPD"
-            icon: mdi:gauge
+      # Big Status Display
+      - type: markdown
+        content: |
+          # 🌿 Flower Room 1
+          {% set status = states('sensor.flower_room_1_grow_status') %}
+          {% set phase = state_attr('sensor.flower_room_1_grow_status', 'phase') %}
+          {% set ec = state_attr('sensor.flower_room_1_grow_status', 'recommended_ec') %}
+          {% set dryback = state_attr('sensor.flower_room_1_grow_status', 'target_dryback') %}
+          
+          ## {{ status }} {% if phase %}| {{ phase }} Phase{% endif %}
+          
+          {% if ec %}
+          | Target | Value |
+          |--------|-------|
+          | **EC** | {{ ec }} |
+          | **Dryback** | {{ dryback }} |
+          {% endif %}
 
       # Next Task
       - type: entities
         title: "📋 Next Task"
+        show_header_toggle: false
         entities:
           - entity: sensor.flower_room_1_next_task
             name: "Task"
@@ -281,45 +96,20 @@ views:
             entity: sensor.flower_room_1_next_task
             attribute: days_until
             name: "Days Until"
-          - type: attribute
-            entity: sensor.flower_room_1_next_task
-            attribute: priority
-            name: "Priority"
+            icon: mdi:clock-outline
 
-      # Todo List
-      - type: todo-list
-        entity: todo.f1_tasks
-        title: "✅ F1 Tasks"
-
-      # Journal Entry (Simple for workers)
-      - type: vertical-stack
-        title: "📝 Add Journal Note"
+      # Quick Actions
+      - type: horizontal-stack
         cards:
-          - type: entities
-            entities:
-              - entity: input_text.f1_journal_note
-                name: "Note"
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: "Save Note"
-                icon: mdi:content-save
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.add_journal_entry
-                  service_data:
-                    room_id: "f1"
-                    note: "{{ states('input_text.f1_journal_note') }}"
-              - type: button
-                name: "Save + Photo"
-                icon: mdi:camera
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.add_journal_entry
-                  service_data:
-                    room_id: "f1"
-                    note: "{{ states('input_text.f1_journal_note') }}"
-                    image_entity: "{{ states('input_select.f1_camera') }}"
+          - type: button
+            name: "Add Journal Note"
+            icon: mdi:notebook-plus
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              service_data:
+                room_id: "f1"
+                note: "Quick note added"
 
       # Journal Count
       - type: entity
@@ -327,45 +117,28 @@ views:
         name: "Journal Entries"
 
   # ===========================================================================
-  # ROOM F2 - Worker View
+  # ROOM F2
   # ===========================================================================
   - title: "F2"
     path: f2
     icon: mdi:numeric-2-circle
     cards:
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              # 🌿 Flower Room 2
-              {% set day = state_attr('sensor.flower_room_2_grow_status', 'current_day') %}
-              {% set phase = state_attr('sensor.flower_room_2_grow_status', 'phase') %}
-              {% if day %}
-              ## Day {{ day }} - {{ phase }} Phase
-              {% else %}
-              ## Not Started
-              {% endif %}
-
-          - type: horizontal-stack
-            cards:
-              - type: entity
-                entity: sensor.flower_room_2_grow_status
-                name: "Status"
-              - type: entity
-                entity: sensor.flower_room_2_grow_progress
-                name: "Progress"
-
-      - type: entities
-        title: "🎯 Current Targets"
-        entities:
-          - type: attribute
-            entity: sensor.flower_room_2_grow_status
-            attribute: recommended_ec
-            name: "Target EC"
-          - type: attribute
-            entity: sensor.flower_room_2_grow_status
-            attribute: target_dryback
-            name: "Target Dryback"
+      - type: markdown
+        content: |
+          # 🌿 Flower Room 2
+          {% set status = states('sensor.flower_room_2_grow_status') %}
+          {% set phase = state_attr('sensor.flower_room_2_grow_status', 'phase') %}
+          {% set ec = state_attr('sensor.flower_room_2_grow_status', 'recommended_ec') %}
+          {% set dryback = state_attr('sensor.flower_room_2_grow_status', 'target_dryback') %}
+          
+          ## {{ status }} {% if phase %}| {{ phase }} Phase{% endif %}
+          
+          {% if ec %}
+          | Target | Value |
+          |--------|-------|
+          | **EC** | {{ ec }} |
+          | **Dryback** | {{ dryback }} |
+          {% endif %}
 
       - type: entities
         title: "📋 Next Task"
@@ -377,67 +150,33 @@ views:
             attribute: days_until
             name: "Days Until"
 
-      - type: todo-list
-        entity: todo.f2_tasks
-        title: "✅ F2 Tasks"
-
-      - type: vertical-stack
-        title: "📝 Add Journal Note"
-        cards:
-          - type: entities
-            entities:
-              - entity: input_text.f2_journal_note
-                name: "Note"
-          - type: button
-            name: "Save Note"
-            icon: mdi:content-save
-            tap_action:
-              action: call-service
-              service: grow_room_manager.add_journal_entry
-              service_data:
-                room_id: "f2"
-                note: "{{ states('input_text.f2_journal_note') }}"
+      - type: entity
+        entity: sensor.flower_room_2_journal_entries
+        name: "Journal Entries"
 
   # ===========================================================================
-  # ROOM F3 - Worker View
+  # ROOM F3
   # ===========================================================================
   - title: "F3"
     path: f3
     icon: mdi:numeric-3-circle
     cards:
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              # 🌿 Flower Room 3
-              {% set day = state_attr('sensor.flower_room_3_grow_status', 'current_day') %}
-              {% set phase = state_attr('sensor.flower_room_3_grow_status', 'phase') %}
-              {% if day %}
-              ## Day {{ day }} - {{ phase }} Phase
-              {% else %}
-              ## Not Started
-              {% endif %}
-
-          - type: horizontal-stack
-            cards:
-              - type: entity
-                entity: sensor.flower_room_3_grow_status
-                name: "Status"
-              - type: entity
-                entity: sensor.flower_room_3_grow_progress
-                name: "Progress"
-
-      - type: entities
-        title: "🎯 Current Targets"
-        entities:
-          - type: attribute
-            entity: sensor.flower_room_3_grow_status
-            attribute: recommended_ec
-            name: "Target EC"
-          - type: attribute
-            entity: sensor.flower_room_3_grow_status
-            attribute: target_dryback
-            name: "Target Dryback"
+      - type: markdown
+        content: |
+          # 🌿 Flower Room 3
+          {% set status = states('sensor.flower_room_3_grow_status') %}
+          {% set phase = state_attr('sensor.flower_room_3_grow_status', 'phase') %}
+          {% set ec = state_attr('sensor.flower_room_3_grow_status', 'recommended_ec') %}
+          {% set dryback = state_attr('sensor.flower_room_3_grow_status', 'target_dryback') %}
+          
+          ## {{ status }} {% if phase %}| {{ phase }} Phase{% endif %}
+          
+          {% if ec %}
+          | Target | Value |
+          |--------|-------|
+          | **EC** | {{ ec }} |
+          | **Dryback** | {{ dryback }} |
+          {% endif %}
 
       - type: entities
         title: "📋 Next Task"
@@ -449,38 +188,9 @@ views:
             attribute: days_until
             name: "Days Until"
 
-      - type: todo-list
-        entity: todo.f3_tasks
-        title: "✅ F3 Tasks"
-
-      - type: vertical-stack
-        title: "📝 Add Journal Note"
-        cards:
-          - type: entities
-            entities:
-              - entity: input_text.f3_journal_note
-                name: "Note"
-          - type: button
-            name: "Save Note"
-            icon: mdi:content-save
-            tap_action:
-              action: call-service
-              service: grow_room_manager.add_journal_entry
-              service_data:
-                room_id: "f3"
-                note: "{{ states('input_text.f3_journal_note') }}"
-
-  # ===========================================================================
-  # CALENDAR VIEW
-  # ===========================================================================
-  - title: "📅 Calendar"
-    path: calendar
-    icon: mdi:calendar
-    cards:
-      - type: calendar
-        entities:
-          - calendar.grow_calendar
-        initial_view: listWeek
+      - type: entity
+        entity: sensor.flower_room_3_journal_entries
+        name: "Journal Entries"
 
   # ===========================================================================
   # QUICK REFERENCE
@@ -491,53 +201,34 @@ views:
     cards:
       - type: markdown
         content: |
-          # 🌿 Athena Pro Line Quick Reference
+          # Athena Pro Line Quick Reference
           
-          ## Phase Overview
+          ## Phases
           
-          | Phase | Days | EC | Dryback | Key Actions |
-          |-------|------|-----|---------|-------------|
-          | **Stretch** | 1-21 | 3.0 | 20-25% | Defoliation, IPM sprays |
-          | **Bulk** | 22-55 | 3.0 | 30-40% | Maintenance every 3 days |
-          | **Finish** | 56-84 | 1.5 | 40-50% | Fade nutrients, harvest prep |
-          
-          ---
+          | Phase | Days | EC | Dryback |
+          |-------|------|-----|---------|
+          | **Stretch** | 1-21 | 3.0 | 20-25% |
+          | **Bulk** | 22-55 | 3.0 | 30-40% |
+          | **Finish** | 56-84 | 1.5 | 40-50% |
           
           ## Critical Days
           
-          - **Day 2**: Heavy defoliation (strip lower 1/3)
+          - **Day 2**: Heavy defoliation
           - **Day 21**: Final defoliation + LAST IPM spray
           - **Day 42**: Major maintenance prune
-          - **Day 56**: Switch to Athena Fade (zero nitrogen)
+          - **Day 56**: Switch to Athena Fade
           - **Day 77-84**: Harvest window
-          
-          ---
           
           ## Environmental Targets
           
-          ### Stretch Phase (Days 1-21)
-          - Day: 78-82°F (25-28°C)
-          - Night: 68-72°F (20-22°C)
-          - Humidity: 55-65%
-          - VPD: 1.0-1.2 kPa
+          ### Stretch (Days 1-21)
+          - Day: 78-82°F | Night: 68-72°F
+          - Humidity: 55-65% | VPD: 1.0-1.2
           
-          ### Bulk Phase (Days 22-55)
-          - Day: 78-82°F (25-28°C)
-          - Night: 65-70°F (18-21°C)
-          - Humidity: 50-60%
-          - VPD: 1.2-1.4 kPa
+          ### Bulk (Days 22-55)
+          - Day: 78-82°F | Night: 65-70°F
+          - Humidity: 50-60% | VPD: 1.2-1.4
           
-          ### Finish Phase (Days 56-84)
-          - Day: 75-78°F (24-26°C)
-          - Night: 62-68°F (17-20°C)
-          - Humidity: 40-50%
-          - VPD: 1.4-1.6 kPa
-          
-          ---
-          
-          ## IPM Schedule (Days 1-21 only)
-          
-          Apply 2x per week:
-          - Day 3, 7, 10, 14, 17, 21
-          
-          ⚠️ **NO SPRAYS AFTER DAY 21!**
+          ### Finish (Days 56-84)
+          - Day: 75-78°F | Night: 62-68°F
+          - Humidity: 40-50% | VPD: 1.4-1.6

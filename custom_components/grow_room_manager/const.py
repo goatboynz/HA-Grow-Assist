@@ -8,6 +8,7 @@ CONF_ROOM_NAME: Final = "name"
 CONF_CALENDAR_ENTITY: Final = "calendar_entity"
 CONF_TODO_ENTITY: Final = "todo_entity"
 CONF_START_DATE_ENTITY: Final = "start_date_entity"
+CONF_START_DATE: Final = "start_date"
 
 # Grow phases
 PHASE_STRETCH: Final = "Stretch"

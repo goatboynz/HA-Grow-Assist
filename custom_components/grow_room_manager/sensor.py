@@ -17,6 +17,7 @@ from .const import (
     DOMAIN,
     CONF_ROOM_ID,
     CONF_ROOM_NAME,
+    CONF_START_DATE,
     PHASE_STRETCH,
     PHASE_BULK,
     PHASE_FINISH,
@@ -70,16 +71,15 @@ class GrowRoomBaseSensor(SensorEntity):
         self._start_date: date | None = None
 
     def _get_start_date(self) -> date | None:
-        """Get the start date from input_datetime helper."""
-        start_date_entity = f"input_datetime.{self._room_id}_start_date"
-        state = self.hass.states.get(start_date_entity)
+        """Get the start date from config entry."""
+        # Get from config entry data
+        start_date_str = self._entry.data.get(CONF_START_DATE)
         
-        if state and state.state not in (STATE_UNKNOWN, "unavailable", "unknown", None, ""):
+        if start_date_str:
             try:
-                date_str = state.state
-                if "T" in date_str:
-                    date_str = date_str.split("T")[0]
-                return datetime.strptime(date_str, "%Y-%m-%d").date()
+                if isinstance(start_date_str, date):
+                    return start_date_str
+                return datetime.strptime(start_date_str, "%Y-%m-%d").date()
             except (ValueError, AttributeError):
                 pass
         return None

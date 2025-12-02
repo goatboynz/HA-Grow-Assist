@@ -1,200 +1,62 @@
 # =============================================================================
-# GROW ROOM MANAGER - Complete Configuration
+# GROW ROOM MANAGER - Configuration
 # =============================================================================
-# 
-# Copy everything below into your configuration.yaml and restart Home Assistant.
+#
+# GOOD NEWS: No configuration.yaml changes needed!
+#
+# Just add rooms via the UI:
+# 1. Settings > Devices & Services > Add Integration
+# 2. Search "Grow Room Manager"
+# 3. Enter room ID (f1, f2, etc.), name, and start date
+# 4. Optionally select a calendar and todo list
+#
+# To change the start date later:
+# Settings > Devices & Services > Grow Room Manager > Configure
 #
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# INPUT DATETIME - Start dates for each room
-# -----------------------------------------------------------------------------
-input_datetime:
-  f1_start_date:
-    name: "F1 Start Date"
-    has_date: true
-    has_time: false
-    icon: mdi:calendar-start
-  f2_start_date:
-    name: "F2 Start Date"
-    has_date: true
-    has_time: false
-    icon: mdi:calendar-start
-  f3_start_date:
-    name: "F3 Start Date"
-    has_date: true
-    has_time: false
-    icon: mdi:calendar-start
-
-# -----------------------------------------------------------------------------
-# INPUT TEXT - Journal notes and strain names
-# -----------------------------------------------------------------------------
-input_text:
-  f1_journal_note:
-    name: "F1 Journal Note"
-    max: 255
-    icon: mdi:note-text
-  f1_strain:
-    name: "F1 Strain"
-    max: 100
-    icon: mdi:leaf
-  f2_journal_note:
-    name: "F2 Journal Note"
-    max: 255
-    icon: mdi:note-text
-  f2_strain:
-    name: "F2 Strain"
-    max: 100
-    icon: mdi:leaf
-  f3_journal_note:
-    name: "F3 Journal Note"
-    max: 255
-    icon: mdi:note-text
-  f3_strain:
-    name: "F3 Strain"
-    max: 100
-    icon: mdi:leaf
-
-# -----------------------------------------------------------------------------
-# INPUT NUMBER - Plant counts
-# -----------------------------------------------------------------------------
-input_number:
-  f1_plant_count:
-    name: "F1 Plant Count"
-    min: 1
-    max: 500
-    step: 1
-    mode: box
-    icon: mdi:sprout
-  f2_plant_count:
-    name: "F2 Plant Count"
-    min: 1
-    max: 500
-    step: 1
-    mode: box
-    icon: mdi:sprout
-  f3_plant_count:
-    name: "F3 Plant Count"
-    min: 1
-    max: 500
-    step: 1
-    mode: box
-    icon: mdi:sprout
-
-# -----------------------------------------------------------------------------
-# INPUT SELECT - Entity selectors for setup page
-# -----------------------------------------------------------------------------
-# IMPORTANT: Update the options below to match YOUR actual entity IDs
-# after creating your calendar and todo lists!
-# -----------------------------------------------------------------------------
-input_select:
-  # Room F1
-  f1_calendar:
-    name: "F1 Calendar"
-    icon: mdi:calendar
-    options:
-      - calendar.grow_calendar
-      - calendar.local_calendar
-      - "none"
-  f1_todo:
-    name: "F1 Todo List"
-    icon: mdi:checkbox-marked-outline
-    options:
-      - todo.f1_tasks
-      - todo.grow_tasks_f1
-      - "none"
-  f1_camera:
-    name: "F1 Camera"
-    icon: mdi:camera
-    options:
-      - "none"
-      - camera.f1_camera
-  
-  # Room F2
-  f2_calendar:
-    name: "F2 Calendar"
-    icon: mdi:calendar
-    options:
-      - calendar.grow_calendar
-      - calendar.local_calendar
-      - "none"
-  f2_todo:
-    name: "F2 Todo List"
-    icon: mdi:checkbox-marked-outline
-    options:
-      - todo.f2_tasks
-      - todo.grow_tasks_f2
-      - "none"
-  f2_camera:
-    name: "F2 Camera"
-    icon: mdi:camera
-    options:
-      - "none"
-      - camera.f2_camera
-  
-  # Room F3
-  f3_calendar:
-    name: "F3 Calendar"
-    icon: mdi:calendar
-    options:
-      - calendar.grow_calendar
-      - calendar.local_calendar
-      - "none"
-  f3_todo:
-    name: "F3 Todo List"
-    icon: mdi:checkbox-marked-outline
-    options:
-      - todo.f3_tasks
-      - todo.grow_tasks_f3
-      - "none"
-  f3_camera:
-    name: "F3 Camera"
-    icon: mdi:camera
-    options:
-      - "none"
-      - camera.f3_camera
-
-# -----------------------------------------------------------------------------
-# DEBUG LOGGING (Optional - remove in production)
-# -----------------------------------------------------------------------------
+# OPTIONAL: Enable debug logging if you have issues
 logger:
   default: info
   logs:
     custom_components.grow_room_manager: debug
 
 # =============================================================================
-# SETUP INSTRUCTIONS
+# OPTIONAL: Create calendar and todo lists for task generation
 # =============================================================================
 #
-# 1. Copy this entire file content into your configuration.yaml
+# If you want to generate tasks to a calendar/todo list:
 #
-# 2. Restart Home Assistant
+# 1. Add Local Calendar integration:
+#    Settings > Devices & Services > Add Integration > Local Calendar
 #
-# 3. Create a Local Calendar:
-#    - Settings > Devices & Services > Add Integration
-#    - Search "Local Calendar" > Add
-#    - Name it "Grow Calendar"
+# 2. Add Local To-do integration:
+#    Settings > Devices & Services > Add Integration > Local To-do
 #
-# 4. Create Local Todo Lists:
-#    - Settings > Devices & Services > Add Integration  
-#    - Search "Local To-do" > Add
-#    - Create lists: "F1 Tasks", "F2 Tasks", "F3 Tasks"
+# 3. When adding a room, select these entities in the config flow
 #
-# 5. Update input_select options above to match your entity IDs:
-#    - Go to Settings > Devices & Services
-#    - Find your calendar/todo entities
-#    - Update the options in this file
-#    - Restart Home Assistant again
+# =============================================================================
+# SERVICE EXAMPLES
+# =============================================================================
 #
-# 6. (Optional) Add rooms for sensors:
-#    - Settings > Devices & Services > Add Integration
-#    - Search "Grow Room Manager" > Add
-#    - Add each room (f1, f2, f3)
+# Generate tasks (if calendar/todo configured):
+#   service: grow_room_manager.generate_tasks
+#   data:
+#     room_id: "f1"
+#     start_date: "2024-12-01"
+#     calendar_entity: calendar.grow_calendar
+#     todo_entity: todo.f1_tasks
 #
-# 7. Create the dashboard:
-#    - Settings > Dashboards > Add Dashboard
-#    - Name: "Grow Rooms"
-#    - Edit > Raw configuration editor
-#    - Paste content from lovelace/grow_room_dashboard.yaml
+# Add journal entry:
+#   service: grow_room_manager.add_journal_entry
+#   data:
+#     room_id: "f1"
+#     note: "Plants looking healthy"
+#
+# Set start date (updates config entry):
+#   service: grow_room_manager.set_start_date
+#   data:
+#     room_id: "f1"
+#     start_date: "2024-12-01"
 #
 # =============================================================================

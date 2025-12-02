@@ -22,6 +22,7 @@ from .const import (
     CONF_ROOM_NAME,
     CONF_CALENDAR_ENTITY,
     CONF_TODO_ENTITY,
+    CONF_START_DATE,
     ATHENA_SCHEDULE,
     SERVICE_ADD_JOURNAL,
     SERVICE_GENERATE_TASKS,
@@ -405,31 +406,38 @@ async def _export_journal(hass: HomeAssistant, data: dict[str, Any]) -> None:
 
 
 async def _set_start_date(hass: HomeAssistant, data: dict[str, Any]) -> None:
-    """Set the start date for a room via input_datetime helper."""
+    """Set the start date for a room by updating its config entry."""
+    from datetime import date
+    
     room_id = data["room_id"]
     start_date = data["start_date"]
     
-    # Convert to date if string
-    if isinstance(start_date, str):
-        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+    # Convert to string if date object
+    if isinstance(start_date, date):
+        start_date = start_date.isoformat()
     
-    # Set the input_datetime helper
-    entity_id = f"input_datetime.{room_id}_start_date"
+    # Find the config entry for this room
+    entry_found = False
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.data.get(CONF_ROOM_ID) == room_id:
+            # Update the config entry with new start date
+            new_data = {**entry.data, CONF_START_DATE: start_date}
+            hass.config_entries.async_update_entry(entry, data=new_data)
+            
+            # Also update the in-memory data
+            if room_id in hass.data[DOMAIN]["rooms"]:
+                hass.data[DOMAIN]["rooms"][room_id][CONF_START_DATE] = start_date
+            
+            # Reload to update sensors
+            await hass.config_entries.async_reload(entry.entry_id)
+            
+            _LOGGER.info("Set start date for %s to %s", room_id, start_date)
+            entry_found = True
+            break
     
-    try:
-        await hass.services.async_call(
-            "input_datetime",
-            "set_datetime",
-            {
-                "entity_id": entity_id,
-                "date": str(start_date),
-            },
-            blocking=True,
-        )
-        _LOGGER.info("Set start date for %s to %s", room_id, start_date)
-    except Exception as err:
+    if not entry_found:
         raise HomeAssistantError(
-            f"Failed to set start date. Make sure {entity_id} exists. Error: {err}"
+            f"Room {room_id} not found. Add it via Settings > Devices & Services > Grow Room Manager."
         )
 
 
@@ -438,19 +446,24 @@ async def _get_today_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
     from datetime import date
     
     room_id = data["room_id"]
+    start_date = None
     
-    # Get start date from input_datetime
-    entity_id = f"input_datetime.{room_id}_start_date"
-    state = hass.states.get(entity_id)
+    # Get start date from config entry
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.data.get(CONF_ROOM_ID) == room_id:
+            start_date_str = entry.data.get(CONF_START_DATE)
+            if start_date_str:
+                try:
+                    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    pass
+            break
     
-    if not state or state.state in ("unknown", "unavailable", ""):
-        raise HomeAssistantError(f"No start date set for room {room_id}")
-    
-    try:
-        date_str = state.state.split("T")[0] if "T" in state.state else state.state
-        start_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-    except ValueError:
-        raise HomeAssistantError(f"Invalid start date format for room {room_id}")
+    if not start_date:
+        raise HomeAssistantError(
+            f"No start date set for room {room_id}. "
+            "Set it via Settings > Devices & Services > Grow Room Manager > Configure."
+        )
     
     # Calculate current day
     current_day = (date.today() - start_date).days + 1
