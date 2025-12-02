@@ -1,0 +1,51 @@
+# =============================================================================
+# GENERATE TASKS CARD
+# =============================================================================
+# Button to manually generate/regenerate tasks
+#
+# USAGE: 
+# - Replace "f1" with your room_id
+# - Replace calendar/todo entities with your actual entities
+# =============================================================================
+
+type: vertical-stack
+cards:
+  - type: markdown
+    content: |
+      ## 📅 Task Generation
+      
+      Click below to generate the 84-day Athena schedule.
+      This will create 35 tasks in your calendar and todo list.
+      
+      **Note:** Tasks are auto-generated when you add a room with a start date.
+      Use this to regenerate if needed.
+
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "Generate Tasks"
+        icon: mdi:calendar-plus
+        icon_height: 40px
+        tap_action:
+          action: call-service
+          service: grow_room_manager.generate_tasks
+          service_data:
+            room_id: "f1"
+            start_date: "{{ state_attr('sensor.flower_room_1_grow_status', 'start_date') }}"
+            calendar_entity: calendar.grow_calendar
+            todo_entity: todo.f1_tasks
+          confirmation:
+            text: "Generate 35 tasks? This may create duplicates if tasks already exist."
+
+      - type: button
+        name: "Set Start to Today"
+        icon: mdi:calendar-today
+        icon_height: 40px
+        tap_action:
+          action: call-service
+          service: grow_room_manager.set_start_date
+          service_data:
+            room_id: "f1"
+            start_date: "{{ now().strftime('%Y-%m-%d') }}"
+          confirmation:
+            text: "Set start date to today?"

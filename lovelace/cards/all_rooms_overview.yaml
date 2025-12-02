@@ -1,0 +1,66 @@
+# =============================================================================
+# ALL ROOMS OVERVIEW CARD
+# =============================================================================
+# Shows status of all rooms at a glance
+# =============================================================================
+
+type: vertical-stack
+cards:
+  - type: markdown
+    content: |
+      # 🌿 Grow Room Overview
+
+  - type: horizontal-stack
+    cards:
+      - type: entity
+        entity: sensor.flower_room_1_grow_status
+        name: "F1"
+        icon: mdi:numeric-1-circle
+      - type: entity
+        entity: sensor.flower_room_2_grow_status
+        name: "F2"
+        icon: mdi:numeric-2-circle
+      - type: entity
+        entity: sensor.flower_room_3_grow_status
+        name: "F3"
+        icon: mdi:numeric-3-circle
+
+  - type: horizontal-stack
+    cards:
+      - type: gauge
+        entity: sensor.flower_room_1_grow_progress
+        name: "F1"
+        min: 0
+        max: 100
+        severity:
+          green: 90
+          yellow: 50
+          red: 0
+      - type: gauge
+        entity: sensor.flower_room_2_grow_progress
+        name: "F2"
+        min: 0
+        max: 100
+        severity:
+          green: 90
+          yellow: 50
+          red: 0
+      - type: gauge
+        entity: sensor.flower_room_3_grow_progress
+        name: "F3"
+        min: 0
+        max: 100
+        severity:
+          green: 90
+          yellow: 50
+          red: 0
+
+  - type: entities
+    title: "📋 Next Tasks"
+    entities:
+      - entity: sensor.flower_room_1_next_task
+        name: "F1"
+      - entity: sensor.flower_room_2_next_task
+        name: "F2"
+      - entity: sensor.flower_room_3_next_task
+        name: "F3"

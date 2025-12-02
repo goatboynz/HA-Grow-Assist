@@ -1,16 +1,19 @@
 # =============================================================================
-# GROW ROOM MANAGER - Simple Dashboard
+# GROW ROOM MANAGER - Complete Dashboard
 # =============================================================================
 # 
-# NO CONFIGURATION NEEDED! Just add rooms via:
-# Settings > Devices & Services > Add Integration > Grow Room Manager
+# HOW TO USE:
+# 1. Add rooms via: Settings > Devices & Services > Add Integration > Grow Room Manager
+# 2. Set start date and optionally select calendar/todo entities
+# 3. Tasks are auto-generated when you add a room!
+# 4. Copy this dashboard or individual cards from lovelace/cards/
 #
 # =============================================================================
 
 title: Grow Rooms
 views:
   # ===========================================================================
-  # OVERVIEW - All Rooms at a Glance
+  # OVERVIEW
   # ===========================================================================
   - title: "Overview"
     path: overview
@@ -20,45 +23,52 @@ views:
         content: |
           # 🌿 Grow Room Manager
           
-          **To add a room:** Settings → Devices & Services → Add Integration → Grow Room Manager
+          Add rooms via **Settings → Devices & Services → Grow Room Manager**
           
-          **To change start date:** Click Configure on the room's integration entry
+          Tasks are automatically generated when you set a start date!
 
-      # Room Status Cards
       - type: horizontal-stack
         cards:
           - type: entity
             entity: sensor.flower_room_1_grow_status
             name: "F1"
+            icon: mdi:numeric-1-circle
           - type: entity
             entity: sensor.flower_room_2_grow_status
             name: "F2"
+            icon: mdi:numeric-2-circle
           - type: entity
             entity: sensor.flower_room_3_grow_status
             name: "F3"
+            icon: mdi:numeric-3-circle
 
-      # Progress
       - type: horizontal-stack
         cards:
           - type: gauge
             entity: sensor.flower_room_1_grow_progress
-            name: "F1 Progress"
+            name: "F1"
             min: 0
             max: 100
-            severity:
-              green: 80
-              yellow: 50
-              red: 0
           - type: gauge
             entity: sensor.flower_room_2_grow_progress
-            name: "F2 Progress"
+            name: "F2"
             min: 0
             max: 100
           - type: gauge
             entity: sensor.flower_room_3_grow_progress
-            name: "F3 Progress"
+            name: "F3"
             min: 0
             max: 100
+
+      - type: entities
+        title: "📋 Upcoming Tasks"
+        entities:
+          - entity: sensor.flower_room_1_next_task
+            name: "F1 Next"
+          - entity: sensor.flower_room_2_next_task
+            name: "F2 Next"
+          - entity: sensor.flower_room_3_next_task
+            name: "F3 Next"
 
   # ===========================================================================
   # ROOM F1
@@ -67,28 +77,59 @@ views:
     path: f1
     icon: mdi:numeric-1-circle
     cards:
-      # Big Status Display
       - type: markdown
         content: |
           # 🌿 Flower Room 1
           {% set status = states('sensor.flower_room_1_grow_status') %}
           {% set phase = state_attr('sensor.flower_room_1_grow_status', 'phase') %}
+          {% set week = state_attr('sensor.flower_room_1_grow_status', 'current_week') %}
           {% set ec = state_attr('sensor.flower_room_1_grow_status', 'recommended_ec') %}
           {% set dryback = state_attr('sensor.flower_room_1_grow_status', 'target_dryback') %}
+          {% set remaining = state_attr('sensor.flower_room_1_grow_status', 'days_remaining') %}
+          {% set harvest = state_attr('sensor.flower_room_1_grow_status', 'harvest_window') %}
           
-          ## {{ status }} {% if phase %}| {{ phase }} Phase{% endif %}
+          {% if status != 'Not Started' %}
+          ## {{ status }} | Week {{ week }} | {{ phase }}
+          {% if harvest %}🎉 **HARVEST WINDOW OPEN!** 🎉{% endif %}
           
-          {% if ec %}
           | Target | Value |
           |--------|-------|
-          | **EC** | {{ ec }} |
-          | **Dryback** | {{ dryback }} |
+          | EC | {{ ec }} |
+          | Dryback | {{ dryback }} |
+          | Days to Harvest | {{ remaining }} |
+          {% else %}
+          ## Not Started
+          Add a start date via Settings > Devices & Services > Grow Room Manager > Configure
           {% endif %}
 
-      # Next Task
+      - type: gauge
+        entity: sensor.flower_room_1_grow_progress
+        name: "Progress"
+        min: 0
+        max: 100
+
+      - type: entities
+        title: "🎯 Environmental Targets"
+        entities:
+          - type: attribute
+            entity: sensor.flower_room_1_grow_status
+            attribute: target_temp_day
+            name: "Day Temp"
+          - type: attribute
+            entity: sensor.flower_room_1_grow_status
+            attribute: target_temp_night
+            name: "Night Temp"
+          - type: attribute
+            entity: sensor.flower_room_1_grow_status
+            attribute: target_humidity
+            name: "Humidity"
+          - type: attribute
+            entity: sensor.flower_room_1_grow_status
+            attribute: target_vpd
+            name: "VPD"
+
       - type: entities
         title: "📋 Next Task"
-        show_header_toggle: false
         entities:
           - entity: sensor.flower_room_1_next_task
             name: "Task"
@@ -96,25 +137,24 @@ views:
             entity: sensor.flower_room_1_next_task
             attribute: days_until
             name: "Days Until"
-            icon: mdi:clock-outline
+          - type: attribute
+            entity: sensor.flower_room_1_next_task
+            attribute: priority
+            name: "Priority"
 
-      # Quick Actions
-      - type: horizontal-stack
-        cards:
-          - type: button
-            name: "Add Journal Note"
-            icon: mdi:notebook-plus
-            tap_action:
-              action: call-service
-              service: grow_room_manager.add_journal_entry
-              service_data:
-                room_id: "f1"
-                note: "Quick note added"
-
-      # Journal Count
       - type: entity
         entity: sensor.flower_room_1_journal_entries
         name: "Journal Entries"
+
+      - type: button
+        name: "Add Journal Note"
+        icon: mdi:notebook-plus
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          service_data:
+            room_id: "f1"
+            note: "Quick check completed"
 
   # ===========================================================================
   # ROOM F2
@@ -128,17 +168,26 @@ views:
           # 🌿 Flower Room 2
           {% set status = states('sensor.flower_room_2_grow_status') %}
           {% set phase = state_attr('sensor.flower_room_2_grow_status', 'phase') %}
+          {% set week = state_attr('sensor.flower_room_2_grow_status', 'current_week') %}
           {% set ec = state_attr('sensor.flower_room_2_grow_status', 'recommended_ec') %}
           {% set dryback = state_attr('sensor.flower_room_2_grow_status', 'target_dryback') %}
           
-          ## {{ status }} {% if phase %}| {{ phase }} Phase{% endif %}
+          {% if status != 'Not Started' %}
+          ## {{ status }} | Week {{ week }} | {{ phase }}
           
-          {% if ec %}
           | Target | Value |
           |--------|-------|
-          | **EC** | {{ ec }} |
-          | **Dryback** | {{ dryback }} |
+          | EC | {{ ec }} |
+          | Dryback | {{ dryback }} |
+          {% else %}
+          ## Not Started
           {% endif %}
+
+      - type: gauge
+        entity: sensor.flower_room_2_grow_progress
+        name: "Progress"
+        min: 0
+        max: 100
 
       - type: entities
         title: "📋 Next Task"
@@ -166,17 +215,26 @@ views:
           # 🌿 Flower Room 3
           {% set status = states('sensor.flower_room_3_grow_status') %}
           {% set phase = state_attr('sensor.flower_room_3_grow_status', 'phase') %}
+          {% set week = state_attr('sensor.flower_room_3_grow_status', 'current_week') %}
           {% set ec = state_attr('sensor.flower_room_3_grow_status', 'recommended_ec') %}
           {% set dryback = state_attr('sensor.flower_room_3_grow_status', 'target_dryback') %}
           
-          ## {{ status }} {% if phase %}| {{ phase }} Phase{% endif %}
+          {% if status != 'Not Started' %}
+          ## {{ status }} | Week {{ week }} | {{ phase }}
           
-          {% if ec %}
           | Target | Value |
           |--------|-------|
-          | **EC** | {{ ec }} |
-          | **Dryback** | {{ dryback }} |
+          | EC | {{ ec }} |
+          | Dryback | {{ dryback }} |
+          {% else %}
+          ## Not Started
           {% endif %}
+
+      - type: gauge
+        entity: sensor.flower_room_3_grow_progress
+        name: "Progress"
+        min: 0
+        max: 100
 
       - type: entities
         title: "📋 Next Task"
@@ -193,7 +251,7 @@ views:
         name: "Journal Entries"
 
   # ===========================================================================
-  # QUICK REFERENCE
+  # GUIDE
   # ===========================================================================
   - title: "📖 Guide"
     path: guide
@@ -204,31 +262,23 @@ views:
           # Athena Pro Line Quick Reference
           
           ## Phases
-          
           | Phase | Days | EC | Dryback |
           |-------|------|-----|---------|
-          | **Stretch** | 1-21 | 3.0 | 20-25% |
-          | **Bulk** | 22-55 | 3.0 | 30-40% |
-          | **Finish** | 56-84 | 1.5 | 40-50% |
+          | Stretch | 1-21 | 3.0 | 20-25% |
+          | Bulk | 22-55 | 3.0 | 30-40% |
+          | Finish | 56-84 | 1.5 | 40-50% |
           
           ## Critical Days
-          
           - **Day 2**: Heavy defoliation
-          - **Day 21**: Final defoliation + LAST IPM spray
+          - **Day 21**: Final defoliation + LAST IPM
           - **Day 42**: Major maintenance prune
           - **Day 56**: Switch to Athena Fade
           - **Day 77-84**: Harvest window
           
           ## Environmental Targets
           
-          ### Stretch (Days 1-21)
-          - Day: 78-82°F | Night: 68-72°F
-          - Humidity: 55-65% | VPD: 1.0-1.2
+          **Stretch (1-21):** 78-82°F day, 68-72°F night, 55-65% RH, VPD 1.0-1.2
           
-          ### Bulk (Days 22-55)
-          - Day: 78-82°F | Night: 65-70°F
-          - Humidity: 50-60% | VPD: 1.2-1.4
+          **Bulk (22-55):** 78-82°F day, 65-70°F night, 50-60% RH, VPD 1.2-1.4
           
-          ### Finish (Days 56-84)
-          - Day: 75-78°F | Night: 62-68°F
-          - Humidity: 40-50% | VPD: 1.4-1.6
+          **Finish (56-84):** 75-78°F day, 62-68°F night, 40-50% RH, VPD 1.4-1.6

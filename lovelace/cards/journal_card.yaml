@@ -1,0 +1,35 @@
+# =============================================================================
+# JOURNAL CARD
+# =============================================================================
+# Add journal entries and view entry count
+#
+# USAGE: Replace "f1" with your room_id
+# =============================================================================
+
+type: vertical-stack
+cards:
+  - type: entities
+    title: "📝 Journal"
+    entities:
+      - entity: sensor.flower_room_1_journal_entries
+        name: "Total Entries"
+      - type: attribute
+        entity: sensor.flower_room_1_journal_entries
+        attribute: last_entry_date
+        name: "Last Entry"
+        icon: mdi:calendar
+
+  - type: markdown
+    content: |
+      **Last Note:**
+      {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_preview') or 'No entries yet' }}
+
+  - type: button
+    name: "Add Quick Note"
+    icon: mdi:notebook-plus
+    tap_action:
+      action: call-service
+      service: grow_room_manager.add_journal_entry
+      service_data:
+        room_id: "f1"
+        note: "Quick check - all good"

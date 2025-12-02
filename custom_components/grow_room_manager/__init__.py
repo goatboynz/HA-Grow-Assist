@@ -66,6 +66,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     
+    # Auto-generate tasks if start_date and calendar/todo are configured
+    start_date = entry.data.get(CONF_START_DATE)
+    calendar_entity = entry.data.get(CONF_CALENDAR_ENTITY)
+    todo_entity = entry.data.get(CONF_TODO_ENTITY)
+    
+    if start_date and (calendar_entity or todo_entity):
+        # Schedule task generation after a short delay to ensure entities are ready
+        async def delayed_task_generation():
+            import asyncio
+            await asyncio.sleep(5)  # Wait for calendar/todo entities to be ready
+            try:
+                await _generate_tasks(hass, {
+                    "room_id": room_id,
+                    "start_date": start_date,
+                    "calendar_entity": calendar_entity,
+                    "todo_entity": todo_entity,
+                })
+                _LOGGER.info("Auto-generated tasks for room %s", room_id)
+            except Exception as err:
+                _LOGGER.warning("Could not auto-generate tasks for %s: %s", room_id, err)
+        
+        hass.async_create_task(delayed_task_generation())
+    
     _LOGGER.info("Grow Room Manager: Room '%s' loaded", room_id)
     return True
 

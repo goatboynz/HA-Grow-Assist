@@ -1,0 +1,47 @@
+# =============================================================================
+# ENVIRONMENTAL TARGETS CARD
+# =============================================================================
+# Shows temperature, humidity, and VPD targets for current phase
+#
+# USAGE: Replace "flower_room_1" with your room's sensor name
+# =============================================================================
+
+type: entities
+title: "🌡️ Environmental Targets"
+show_header_toggle: false
+entities:
+  - type: attribute
+    entity: sensor.flower_room_1_grow_status
+    attribute: phase
+    name: "Current Phase"
+    icon: mdi:leaf
+  - type: attribute
+    entity: sensor.flower_room_1_grow_status
+    attribute: target_temp_day
+    name: "Day Temperature"
+    icon: mdi:thermometer
+  - type: attribute
+    entity: sensor.flower_room_1_grow_status
+    attribute: target_temp_night
+    name: "Night Temperature"
+    icon: mdi:thermometer-low
+  - type: attribute
+    entity: sensor.flower_room_1_grow_status
+    attribute: target_humidity
+    name: "Humidity"
+    icon: mdi:water-percent
+  - type: attribute
+    entity: sensor.flower_room_1_grow_status
+    attribute: target_vpd
+    name: "VPD"
+    icon: mdi:gauge
+  - type: attribute
+    entity: sensor.flower_room_1_grow_status
+    attribute: recommended_ec
+    name: "Target EC"
+    icon: mdi:water
+  - type: attribute
+    entity: sensor.flower_room_1_grow_status
+    attribute: target_dryback
+    name: "Target Dryback"
+    icon: mdi:water-outline
