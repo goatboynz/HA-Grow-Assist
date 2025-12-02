@@ -47,34 +47,20 @@ Or manually: HACS → Custom repositories → Add `https://github.com/goatboynz/
 
 **That's it! No configuration.yaml changes needed.**
 
-### 3. Access the Dashboard
+### 3. Access the App
 
-After adding your first room, a **"Grow Rooms"** entry appears in your Home Assistant sidebar! 🎉
+After adding your first room, **"Grow Rooms"** appears in your Home Assistant sidebar! 🎉
 
-Click it to see an overview of all your rooms with:
-- Room status and progress
-- Active batches (veg room)
-- Quick links to full dashboard
-
-### 4. Full Dashboard (Optional)
-
-For the complete dashboard experience with all features:
-
-1. **Settings** → **Dashboards** → **Add Dashboard**
-2. Name it "Grow Rooms Full"
-3. Open the new dashboard, click **Edit** (pencil icon)
-4. Click the 3 dots menu → **Raw configuration editor**
-5. Delete everything and paste contents of `lovelace/grow_room_dashboard.yaml`
-6. Save
-
-The full dashboard includes:
-- **Overview** - All rooms at a glance with progress gauges
-- **Veg** - Batch management with quick-add buttons
-- **F1/F2/F3** - Individual flower room pages
-- **Journal** - Quick notes for all rooms
-- **Feeding** - Nutrient calculator
+This is a **complete standalone application** with:
+- **Overview** - All rooms at a glance with progress bars
+- **Flower Rooms** - Detailed view for F1, F2, F3 with targets and quick journal
+- **Veg Room** - Batch management with add/edit forms
+- **Journal** - Quick notes with one-click buttons
+- **Feeding** - Athena nutrient calculator for all phases
 - **Settings** - Start dates and task generation
-- **Guide** - Athena Pro Line reference
+- **Guide** - Complete Athena Pro Line reference
+
+Everything is managed within the app - no Lovelace cards needed!
 
 ---
 
