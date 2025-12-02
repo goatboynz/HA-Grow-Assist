@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -14,7 +13,6 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.components.camera import async_get_image
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import (
@@ -28,56 +26,117 @@ from .const import (
     SERVICE_ADD_JOURNAL,
     SERVICE_GENERATE_TASKS,
     SERVICE_CLEAR_TASKS,
+    SERVICE_EXPORT_JOURNAL,
+    SERVICE_SET_START_DATE,
+    SERVICE_GET_TODAY_TASKS,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
-# Schema for room configuration
-ROOM_SCHEMA = vol.Schema({
-    vol.Required(CONF_ROOM_ID): cv.string,
-    vol.Required(CONF_ROOM_NAME): cv.string,
-    vol.Required(CONF_CALENDAR_ENTITY): cv.entity_id,
-    vol.Required(CONF_TODO_ENTITY): cv.entity_id,
-})
-
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Required(CONF_ROOMS): vol.All(cv.ensure_list, [ROOM_SCHEMA]),
-    }),
-}, extra=vol.ALLOW_EXTRA)
-
-# Service schemas
-SERVICE_JOURNAL_SCHEMA = vol.Schema({
-    vol.Required("room_id"): cv.string,
-    vol.Required("note"): cv.string,
-    vol.Optional("image_entity"): cv.entity_id,
-})
-
-SERVICE_GENERATE_SCHEMA = vol.Schema({
-    vol.Required("room_id"): cv.string,
-    vol.Required("start_date"): cv.date,
-})
-
-SERVICE_CLEAR_SCHEMA = vol.Schema({
-    vol.Required("room_id"): cv.string,
-})
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Grow Room Manager integration."""
-    if DOMAIN not in config:
-        return True
+    """Set up the Grow Room Manager integration from YAML (legacy support)."""
+    hass.data.setdefault(DOMAIN, {"rooms": {}})
+    return True
 
-    hass.data[DOMAIN] = {
-        "rooms": {room[CONF_ROOM_ID]: room for room in config[DOMAIN][CONF_ROOMS]},
-    }
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Grow Room Manager from a config entry."""
+    hass.data.setdefault(DOMAIN, {"rooms": {}})
+    
+    # Store room config from entry
+    room_id = entry.data[CONF_ROOM_ID]
+    hass.data[DOMAIN]["rooms"][room_id] = dict(entry.data)
 
     # Ensure directories exist
-    await hass.async_add_executor_job(_ensure_directories, hass)
+    await hass.async_add_executor_job(_ensure_directories, hass, room_id)
+    
+    # Register services (only once)
+    await _async_register_services(hass)
+    
+    # Set up platforms
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    
+    _LOGGER.info("Grow Room Manager: Room '%s' loaded", room_id)
+    return True
 
-    # Register services
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    room_id = entry.data[CONF_ROOM_ID]
+    
+    # Unload platforms
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    
+    if unload_ok:
+        hass.data[DOMAIN]["rooms"].pop(room_id, None)
+        _LOGGER.info("Grow Room Manager: Room '%s' unloaded", room_id)
+    
+    return unload_ok
+
+
+def _ensure_directories(hass: HomeAssistant, room_id: str) -> None:
+    """Ensure required directories exist."""
+    config_path = hass.config.path()
+    
+    # Create grow_logs directory
+    logs_path = Path(config_path) / "grow_logs"
+    logs_path.mkdir(parents=True, exist_ok=True)
+    
+    # Create www/grow_logs directory for images
+    www_logs_path = Path(config_path) / "www" / "grow_logs"
+    www_logs_path.mkdir(parents=True, exist_ok=True)
+    
+    # Create room subdirectories
+    room_logs = logs_path / room_id
+    room_logs.mkdir(parents=True, exist_ok=True)
+    room_www = www_logs_path / room_id
+    room_www.mkdir(parents=True, exist_ok=True)
+
+
+async def _async_register_services(hass: HomeAssistant) -> None:
+    """Register services for the integration."""
+    
+    # Only register once
+    if hass.services.has_service(DOMAIN, SERVICE_GENERATE_TASKS):
+        return
+    
+    # Service schemas
+    service_journal_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+        vol.Required("note"): cv.string,
+        vol.Optional("image_entity"): cv.entity_id,
+    })
+    
+    service_generate_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+        vol.Required("start_date"): cv.date,
+        vol.Optional("calendar_entity"): cv.entity_id,
+        vol.Optional("todo_entity"): cv.entity_id,
+    })
+    
+    service_clear_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+    })
+    
+    service_export_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+        vol.Optional("format", default="csv"): vol.In(["csv", "json"]),
+    })
+    
+    service_set_start_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+        vol.Required("start_date"): cv.date,
+    })
+    
+    service_today_tasks_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+    })
+
     async def handle_add_journal_entry(call: ServiceCall) -> None:
         """Handle the add_journal_entry service call."""
         await _add_journal_entry(hass, call.data)
@@ -90,44 +149,38 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         """Handle the clear_tasks service call."""
         await _clear_tasks(hass, call.data)
 
+    async def handle_export_journal(call: ServiceCall) -> None:
+        """Handle the export_journal service call."""
+        await _export_journal(hass, call.data)
+
+    async def handle_set_start_date(call: ServiceCall) -> None:
+        """Handle the set_start_date service call."""
+        await _set_start_date(hass, call.data)
+
+    async def handle_get_today_tasks(call: ServiceCall) -> None:
+        """Handle the get_today_tasks service call."""
+        await _get_today_tasks(hass, call.data)
+
     hass.services.async_register(
-        DOMAIN, SERVICE_ADD_JOURNAL, handle_add_journal_entry, schema=SERVICE_JOURNAL_SCHEMA
+        DOMAIN, SERVICE_ADD_JOURNAL, handle_add_journal_entry, schema=service_journal_schema
     )
     hass.services.async_register(
-        DOMAIN, SERVICE_GENERATE_TASKS, handle_generate_tasks, schema=SERVICE_GENERATE_SCHEMA
+        DOMAIN, SERVICE_GENERATE_TASKS, handle_generate_tasks, schema=service_generate_schema
     )
     hass.services.async_register(
-        DOMAIN, SERVICE_CLEAR_TASKS, handle_clear_tasks, schema=SERVICE_CLEAR_SCHEMA
+        DOMAIN, SERVICE_CLEAR_TASKS, handle_clear_tasks, schema=service_clear_schema
     )
-
-    # Set up sensors
-    hass.async_create_task(
-        hass.helpers.discovery.async_load_platform(Platform.SENSOR, DOMAIN, {}, config)
+    hass.services.async_register(
+        DOMAIN, SERVICE_EXPORT_JOURNAL, handle_export_journal, schema=service_export_schema
     )
-
-    _LOGGER.info("Grow Room Manager integration loaded with %d rooms", len(hass.data[DOMAIN]["rooms"]))
-    return True
-
-
-def _ensure_directories(hass: HomeAssistant) -> None:
-    """Ensure required directories exist."""
-    config_path = hass.config.path()
+    hass.services.async_register(
+        DOMAIN, SERVICE_SET_START_DATE, handle_set_start_date, schema=service_set_start_schema
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_GET_TODAY_TASKS, handle_get_today_tasks, schema=service_today_tasks_schema
+    )
     
-    # Create grow_logs directory
-    logs_path = Path(config_path) / "grow_logs"
-    logs_path.mkdir(parents=True, exist_ok=True)
-    
-    # Create www/grow_logs directory for images
-    www_logs_path = Path(config_path) / "www" / "grow_logs"
-    www_logs_path.mkdir(parents=True, exist_ok=True)
-    
-    # Create subdirectories for each room
-    if DOMAIN in hass.data:
-        for room_id in hass.data[DOMAIN]["rooms"]:
-            room_logs = logs_path / room_id
-            room_logs.mkdir(parents=True, exist_ok=True)
-            room_www = www_logs_path / room_id
-            room_www.mkdir(parents=True, exist_ok=True)
+    _LOGGER.info("Grow Room Manager services registered")
 
 
 async def _add_journal_entry(hass: HomeAssistant, data: dict[str, Any]) -> None:
@@ -141,7 +194,12 @@ async def _add_journal_entry(hass: HomeAssistant, data: dict[str, Any]) -> None:
     timestamp_iso = timestamp.isoformat()
     
     config_path = hass.config.path()
-    journal_file = Path(config_path) / "grow_logs" / f"{room_id}.json"
+    
+    # Ensure directory exists
+    journal_dir = Path(config_path) / "grow_logs"
+    journal_dir.mkdir(parents=True, exist_ok=True)
+    
+    journal_file = journal_dir / f"{room_id}.json"
     
     # Prepare journal entry
     entry = {
@@ -154,12 +212,12 @@ async def _add_journal_entry(hass: HomeAssistant, data: dict[str, Any]) -> None:
     # Handle camera snapshot if provided
     if image_entity:
         try:
+            from homeassistant.components.camera import async_get_image
             image = await async_get_image(hass, image_entity)
             image_filename = f"{timestamp_str}.jpg"
-            image_path = Path(config_path) / "www" / "grow_logs" / room_id / image_filename
-            
-            # Ensure room directory exists
-            image_path.parent.mkdir(parents=True, exist_ok=True)
+            image_dir = Path(config_path) / "www" / "grow_logs" / room_id
+            image_dir.mkdir(parents=True, exist_ok=True)
+            image_path = image_dir / image_filename
             
             # Save image
             await hass.async_add_executor_job(_write_image, image_path, image.content)
@@ -167,10 +225,8 @@ async def _add_journal_entry(hass: HomeAssistant, data: dict[str, Any]) -> None:
             entry["image_path"] = str(image_path)
             entry["image_url"] = f"/local/grow_logs/{room_id}/{image_filename}"
             _LOGGER.info("Saved snapshot to %s", image_path)
-        except HomeAssistantError as err:
-            _LOGGER.error("Failed to get camera image from %s: %s", image_entity, err)
         except Exception as err:
-            _LOGGER.error("Unexpected error saving camera image: %s", err)
+            _LOGGER.error("Failed to get camera image from %s: %s", image_entity, err)
     
     # Load existing entries or create new list
     entries = await hass.async_add_executor_job(_load_journal, journal_file)
@@ -210,19 +266,31 @@ async def _generate_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
     room_id = data["room_id"]
     start_date = data["start_date"]
     
-    if room_id not in hass.data[DOMAIN]["rooms"]:
-        _LOGGER.error("Room %s not found in configuration", room_id)
-        raise HomeAssistantError(f"Room {room_id} not found")
+    # Get entities from service call or from stored room config
+    calendar_entity = data.get("calendar_entity")
+    todo_entity = data.get("todo_entity")
     
-    room_config = hass.data[DOMAIN]["rooms"][room_id]
-    calendar_entity = room_config[CONF_CALENDAR_ENTITY]
-    todo_entity = room_config[CONF_TODO_ENTITY]
+    # Fall back to stored config if not provided in service call
+    if room_id in hass.data[DOMAIN]["rooms"]:
+        room_config = hass.data[DOMAIN]["rooms"][room_id]
+        if not calendar_entity:
+            calendar_entity = room_config.get(CONF_CALENDAR_ENTITY)
+        if not todo_entity:
+            todo_entity = room_config.get(CONF_TODO_ENTITY)
     
-    # Convert start_date to datetime if needed
+    if not calendar_entity and not todo_entity:
+        raise HomeAssistantError(
+            f"No calendar or todo entity configured for room {room_id}. "
+            "Please provide calendar_entity and/or todo_entity in the service call."
+        )
+    
+    # Convert start_date to date if needed
     if isinstance(start_date, str):
         start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
     
     _LOGGER.info("Generating tasks for room %s starting %s", room_id, start_date)
+    
+    tasks_created = 0
     
     # Generate tasks from schedule
     for day_num, task_info in ATHENA_SCHEDULE.items():
@@ -231,66 +299,179 @@ async def _generate_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
         task_description = task_info["description"]
         
         # Create calendar event
-        try:
-            await hass.services.async_call(
-                "calendar",
-                "create_event",
-                {
-                    "entity_id": calendar_entity,
-                    "summary": task_title,
-                    "description": task_description,
-                    "start_date": str(task_date),
-                    "end_date": str(task_date),
-                },
-                blocking=True,
-            )
-            _LOGGER.debug("Created calendar event: %s on %s", task_title, task_date)
-        except Exception as err:
-            _LOGGER.error("Failed to create calendar event: %s", err)
+        if calendar_entity:
+            try:
+                await hass.services.async_call(
+                    "calendar",
+                    "create_event",
+                    {
+                        "entity_id": calendar_entity,
+                        "summary": task_title,
+                        "description": task_description,
+                        "start_date": str(task_date),
+                        "end_date": str(task_date),
+                    },
+                    blocking=True,
+                )
+                _LOGGER.debug("Created calendar event: %s on %s", task_title, task_date)
+            except Exception as err:
+                _LOGGER.error("Failed to create calendar event: %s", err)
         
         # Create todo item
-        try:
-            await hass.services.async_call(
-                "todo",
-                "add_item",
-                {
-                    "entity_id": todo_entity,
-                    "item": task_title,
-                    "due_date": str(task_date),
-                    "description": task_description,
-                },
-                blocking=True,
-            )
-            _LOGGER.debug("Created todo item: %s", task_title)
-        except Exception as err:
-            _LOGGER.error("Failed to create todo item: %s", err)
+        if todo_entity:
+            try:
+                await hass.services.async_call(
+                    "todo",
+                    "add_item",
+                    {
+                        "entity_id": todo_entity,
+                        "item": task_title,
+                        "due_date": str(task_date),
+                        "description": task_description,
+                    },
+                    blocking=True,
+                )
+                _LOGGER.debug("Created todo item: %s", task_title)
+            except Exception as err:
+                _LOGGER.error("Failed to create todo item: %s", err)
+        
+        tasks_created += 1
     
-    _LOGGER.info("Generated %d tasks for room %s", len(ATHENA_SCHEDULE), room_id)
+    _LOGGER.info("Generated %d tasks for room %s", tasks_created, room_id)
 
 
 async def _clear_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
-    """Clear all tasks for a room (todo items only - calendar events must be cleared manually)."""
+    """Clear all tasks for a room."""
+    room_id = data["room_id"]
+    _LOGGER.info("Clear tasks requested for room %s", room_id)
+    _LOGGER.warning(
+        "Automatic task clearing is not fully supported. "
+        "Please manually clear calendar events and todo items for room %s.",
+        room_id
+    )
+
+
+async def _export_journal(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """Export journal entries to CSV or JSON file."""
+    import csv
+    
+    room_id = data["room_id"]
+    export_format = data.get("format", "csv")
+    
+    config_path = hass.config.path()
+    journal_file = Path(config_path) / "grow_logs" / f"{room_id}.json"
+    
+    if not journal_file.exists():
+        raise HomeAssistantError(f"No journal found for room {room_id}")
+    
+    entries = await hass.async_add_executor_job(_load_journal, journal_file)
+    
+    if not entries:
+        raise HomeAssistantError(f"Journal for room {room_id} is empty")
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    if export_format == "csv":
+        export_file = Path(config_path) / "www" / "grow_logs" / f"{room_id}_export_{timestamp}.csv"
+        
+        def write_csv():
+            export_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(export_file, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=["timestamp", "note", "image_url"])
+                writer.writeheader()
+                for entry in entries:
+                    writer.writerow({
+                        "timestamp": entry.get("timestamp", ""),
+                        "note": entry.get("note", ""),
+                        "image_url": entry.get("image_url", ""),
+                    })
+        
+        await hass.async_add_executor_job(write_csv)
+        _LOGGER.info("Exported journal to %s", export_file)
+    else:
+        export_file = Path(config_path) / "www" / "grow_logs" / f"{room_id}_export_{timestamp}.json"
+        
+        def write_json():
+            export_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(export_file, "w", encoding="utf-8") as f:
+                json.dump(entries, f, indent=2)
+        
+        await hass.async_add_executor_job(write_json)
+        _LOGGER.info("Exported journal to %s", export_file)
+
+
+async def _set_start_date(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """Set the start date for a room via input_datetime helper."""
+    room_id = data["room_id"]
+    start_date = data["start_date"]
+    
+    # Convert to date if string
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+    
+    # Set the input_datetime helper
+    entity_id = f"input_datetime.{room_id}_start_date"
+    
+    try:
+        await hass.services.async_call(
+            "input_datetime",
+            "set_datetime",
+            {
+                "entity_id": entity_id,
+                "date": str(start_date),
+            },
+            blocking=True,
+        )
+        _LOGGER.info("Set start date for %s to %s", room_id, start_date)
+    except Exception as err:
+        raise HomeAssistantError(
+            f"Failed to set start date. Make sure {entity_id} exists. Error: {err}"
+        )
+
+
+async def _get_today_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """Get tasks for today and fire an event with the details."""
+    from datetime import date
+    
     room_id = data["room_id"]
     
-    if room_id not in hass.data[DOMAIN]["rooms"]:
-        _LOGGER.error("Room %s not found in configuration", room_id)
-        raise HomeAssistantError(f"Room {room_id} not found")
+    # Get start date from input_datetime
+    entity_id = f"input_datetime.{room_id}_start_date"
+    state = hass.states.get(entity_id)
     
-    room_config = hass.data[DOMAIN]["rooms"][room_id]
-    todo_entity = room_config[CONF_TODO_ENTITY]
+    if not state or state.state in ("unknown", "unavailable", ""):
+        raise HomeAssistantError(f"No start date set for room {room_id}")
     
-    _LOGGER.info("Clearing tasks for room %s", room_id)
-    
-    # Get current todo items
     try:
-        todo_state = hass.states.get(todo_entity)
-        if todo_state:
-            # Note: Clearing all items requires iterating through them
-            # This is a simplified approach - full implementation would need
-            # to use the todo.get_items service and remove each one
-            _LOGGER.warning(
-                "Clear tasks requested for %s. Manual clearing of calendar events may be required.",
-                room_id
-            )
-    except Exception as err:
-        _LOGGER.error("Failed to clear tasks: %s", err)
+        date_str = state.state.split("T")[0] if "T" in state.state else state.state
+        start_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HomeAssistantError(f"Invalid start date format for room {room_id}")
+    
+    # Calculate current day
+    current_day = (date.today() - start_date).days + 1
+    
+    if current_day < 1:
+        _LOGGER.info("Grow cycle for %s hasn't started yet", room_id)
+        return
+    
+    # Check if there's a task for today
+    if current_day in ATHENA_SCHEDULE:
+        task = ATHENA_SCHEDULE[current_day]
+        
+        # Fire an event that automations can listen to
+        hass.bus.async_fire(
+            f"{DOMAIN}_task_today",
+            {
+                "room_id": room_id,
+                "day": current_day,
+                "title": task["title"],
+                "description": task["description"],
+                "category": task.get("category", ""),
+                "priority": task.get("priority", "medium"),
+                "phase": task.get("phase", ""),
+            }
+        )
+        _LOGGER.info("Task for %s Day %d: %s", room_id, current_day, task["title"])
+    else:
+        _LOGGER.debug("No scheduled task for %s on Day %d", room_id, current_day)

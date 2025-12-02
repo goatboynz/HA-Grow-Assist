@@ -16,4 +16,4 @@ Manage medical cannabis flowering rooms using the Athena Pro Line cultivation me
 3. Set start date and generate tasks
 4. Follow the Athena Pro Line schedule!
 
-See [full documentation](https://github.com/YOUR_USERNAME/grow_room_manager) for details.
+See [full documentation](https://github.com/goatboynz/HA-Grow-Assist) for details.

@@ -1,5 +1,14 @@
 # Grow Room Manager Dashboard
 # Copy this to your Lovelace configuration or use as a separate dashboard
+#
+# PREREQUISITES:
+# 1. Install Grow Room Manager integration via HACS
+# 2. Add rooms via Settings > Devices & Services > Add Integration > Grow Room Manager
+# 3. Create these helpers for each room (replace X with room number):
+#    - input_datetime.fX_start_date (date only)
+#    - input_text.fX_journal_note
+# 4. Create a calendar entity (e.g., via Local Calendar integration)
+# 5. Create todo list entities for each room (via Local To-do integration)
 
 title: Grow Room Manager
 views:
@@ -11,118 +20,74 @@ views:
       - type: horizontal-stack
         cards:
           - type: entity
-            entity: sensor.f1_grow_status
+            entity: sensor.flower_room_1_grow_status
             name: F1 Status
             icon: mdi:flower
           - type: entity
-            entity: sensor.f2_grow_status
+            entity: sensor.flower_room_2_grow_status
             name: F2 Status
             icon: mdi:flower
           - type: entity
-            entity: sensor.f3_grow_status
+            entity: sensor.flower_room_3_grow_status
             name: F3 Status
             icon: mdi:flower
 
-      # Detailed Status for each room
-      - type: entities
-        title: Room Details
-        entities:
-          - entity: sensor.f1_grow_status
-            type: attribute
-            attribute: phase
-            name: F1 Phase
-          - entity: sensor.f1_grow_status
-            type: attribute
-            attribute: recommended_ec
-            name: F1 Target EC
-          - entity: sensor.f1_grow_status
-            type: attribute
-            attribute: target_dryback
-            name: F1 Dryback Target
-          - type: divider
-          - entity: sensor.f2_grow_status
-            type: attribute
-            attribute: phase
-            name: F2 Phase
-          - entity: sensor.f2_grow_status
-            type: attribute
-            attribute: recommended_ec
-            name: F2 Target EC
-          - entity: sensor.f2_grow_status
-            type: attribute
-            attribute: target_dryback
-            name: F2 Dryback Target
-          - type: divider
-          - entity: sensor.f3_grow_status
-            type: attribute
-            attribute: phase
-            name: F3 Phase
-          - entity: sensor.f3_grow_status
-            type: attribute
-            attribute: recommended_ec
-            name: F3 Target EC
-          - entity: sensor.f3_grow_status
-            type: attribute
-            attribute: target_dryback
-            name: F3 Dryback Target
+      # Quick Actions
+      - type: markdown
+        title: Quick Start Guide
+        content: |
+          ## How to Use
+          1. **Set Start Date**: Enter the flip date (Day 1 of flower)
+          2. **Generate Tasks**: Click to create 84 days of tasks
+          3. **Track Progress**: Sensor shows current day and phase
+          4. **Journal**: Add notes and photos throughout the grow
+          
+          ## Current Phase Targets
+          | Phase | Days | EC | Dryback |
+          |-------|------|-----|---------|
+          | Stretch | 1-21 | 3.0 | 20-25% |
+          | Bulk | 22-55 | 3.0 | 30-40% |
+          | Finish | 56-84 | 1.5 | 40-50% |
 
   - title: F1 Room
     path: f1
     icon: mdi:numeric-1-circle
     cards:
       # Status Card
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            title: F1 - Flower Room 1
-            content: |
-              **Current Status:** {{ states('sensor.f1_grow_status') }}
-              
-              **Phase:** {{ state_attr('sensor.f1_grow_status', 'phase') }}
-              
-              **Target EC:** {{ state_attr('sensor.f1_grow_status', 'recommended_ec') }}
-              
-              **Dryback Target:** {{ state_attr('sensor.f1_grow_status', 'target_dryback') }}
-              
-              **Days to Harvest:** {{ state_attr('sensor.f1_grow_status', 'days_remaining') }}
-              
-              {% if state_attr('sensor.f1_grow_status', 'harvest_window') %}
-              🌿 **HARVEST WINDOW OPEN** 🌿
-              {% endif %}
+      - type: markdown
+        title: F1 - Flower Room 1
+        content: |
+          **Status:** {{ states('sensor.flower_room_1_grow_status') }}
+          **Phase:** {{ state_attr('sensor.flower_room_1_grow_status', 'phase') }}
+          **Target EC:** {{ state_attr('sensor.flower_room_1_grow_status', 'recommended_ec') }}
+          **Dryback:** {{ state_attr('sensor.flower_room_1_grow_status', 'target_dryback') }}
+          **Days to Harvest:** {{ state_attr('sensor.flower_room_1_grow_status', 'days_remaining') }}
+          {% if state_attr('sensor.flower_room_1_grow_status', 'harvest_window') %}
+          🌿 **HARVEST WINDOW OPEN** 🌿
+          {% endif %}
 
       # Start Date & Task Generation
-      - type: vertical-stack
+      - type: entities
         title: Cycle Management
+        entities:
+          - entity: input_datetime.f1_start_date
+            name: Start Date (Day 1 of Flower)
+
+      - type: horizontal-stack
         cards:
-          - type: entities
-            entities:
-              - entity: input_datetime.f1_start_date
-                name: Start Date (Day 1)
-          
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Generate Tasks
-                icon: mdi:calendar-plus
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.generate_tasks
-                  data:
-                    room_id: f1
-                    start_date: "{{ states('input_datetime.f1_start_date') }}"
-                  confirmation:
-                    text: Generate all Athena schedule tasks for F1?
-              
-              - type: button
-                name: Clear Tasks
-                icon: mdi:calendar-remove
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.clear_tasks
-                  data:
-                    room_id: f1
-                  confirmation:
-                    text: Clear all tasks for F1?
+          - type: button
+            name: Generate Tasks
+            icon: mdi:calendar-plus
+            tap_action:
+              action: call-service
+              service: grow_room_manager.generate_tasks
+              service_data:
+                room_id: f1
+                start_date: "{{ states('input_datetime.f1_start_date') }}"
+                calendar_entity: calendar.grow_calendar
+                todo_entity: todo.grow_tasks_f1
+              confirmation:
+                text: Generate all 35 Athena schedule tasks for F1?
 
       # Todo List
       - type: todo-list
@@ -130,226 +95,147 @@ views:
         title: F1 Tasks
 
       # Journal Entry
-      - type: vertical-stack
-        title: Journal Entry
-        cards:
-          - type: entities
-            entities:
-              - entity: input_text.f1_journal_note
-                name: Note
-          
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Save Note
-                icon: mdi:content-save
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.add_journal_entry
-                  data:
-                    room_id: f1
-                    note: "{{ states('input_text.f1_journal_note') }}"
-              
-              - type: button
-                name: Save with Photo
-                icon: mdi:camera
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.add_journal_entry
-                  data:
-                    room_id: f1
-                    note: "{{ states('input_text.f1_journal_note') }}"
-                    image_entity: camera.grow_room_f1
+      - type: entities
+        title: Add Journal Entry
+        entities:
+          - entity: input_text.f1_journal_note
+            name: Note
 
-      # Journal History
-      - type: markdown
-        title: Journal History
-        content: |
-          {{ states('sensor.f1_journal_history') }}
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Save Note
+            icon: mdi:content-save
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              service_data:
+                room_id: f1
+                note: "{{ states('input_text.f1_journal_note') }}"
+          - type: button
+            name: Save with Photo
+            icon: mdi:camera
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              service_data:
+                room_id: f1
+                note: "{{ states('input_text.f1_journal_note') }}"
+                image_entity: camera.grow_room_f1
 
   - title: F2 Room
     path: f2
     icon: mdi:numeric-2-circle
     cards:
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            title: F2 - Flower Room 2
-            content: |
-              **Current Status:** {{ states('sensor.f2_grow_status') }}
-              
-              **Phase:** {{ state_attr('sensor.f2_grow_status', 'phase') }}
-              
-              **Target EC:** {{ state_attr('sensor.f2_grow_status', 'recommended_ec') }}
-              
-              **Dryback Target:** {{ state_attr('sensor.f2_grow_status', 'target_dryback') }}
-              
-              **Days to Harvest:** {{ state_attr('sensor.f2_grow_status', 'days_remaining') }}
+      - type: markdown
+        title: F2 - Flower Room 2
+        content: |
+          **Status:** {{ states('sensor.flower_room_2_grow_status') }}
+          **Phase:** {{ state_attr('sensor.flower_room_2_grow_status', 'phase') }}
+          **Target EC:** {{ state_attr('sensor.flower_room_2_grow_status', 'recommended_ec') }}
+          **Dryback:** {{ state_attr('sensor.flower_room_2_grow_status', 'target_dryback') }}
+          **Days to Harvest:** {{ state_attr('sensor.flower_room_2_grow_status', 'days_remaining') }}
 
-      - type: vertical-stack
+      - type: entities
         title: Cycle Management
+        entities:
+          - entity: input_datetime.f2_start_date
+            name: Start Date (Day 1 of Flower)
+
+      - type: horizontal-stack
         cards:
-          - type: entities
-            entities:
-              - entity: input_datetime.f2_start_date
-                name: Start Date (Day 1)
-          
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Generate Tasks
-                icon: mdi:calendar-plus
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.generate_tasks
-                  data:
-                    room_id: f2
-                    start_date: "{{ states('input_datetime.f2_start_date') }}"
-                  confirmation:
-                    text: Generate all Athena schedule tasks for F2?
-              
-              - type: button
-                name: Clear Tasks
-                icon: mdi:calendar-remove
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.clear_tasks
-                  data:
-                    room_id: f2
-                  confirmation:
-                    text: Clear all tasks for F2?
+          - type: button
+            name: Generate Tasks
+            icon: mdi:calendar-plus
+            tap_action:
+              action: call-service
+              service: grow_room_manager.generate_tasks
+              service_data:
+                room_id: f2
+                start_date: "{{ states('input_datetime.f2_start_date') }}"
+                calendar_entity: calendar.grow_calendar
+                todo_entity: todo.grow_tasks_f2
+              confirmation:
+                text: Generate all 35 Athena schedule tasks for F2?
 
       - type: todo-list
         entity: todo.grow_tasks_f2
         title: F2 Tasks
 
-      - type: vertical-stack
-        title: Journal Entry
-        cards:
-          - type: entities
-            entities:
-              - entity: input_text.f2_journal_note
-                name: Note
-          
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Save Note
-                icon: mdi:content-save
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.add_journal_entry
-                  data:
-                    room_id: f2
-                    note: "{{ states('input_text.f2_journal_note') }}"
-              
-              - type: button
-                name: Save with Photo
-                icon: mdi:camera
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.add_journal_entry
-                  data:
-                    room_id: f2
-                    note: "{{ states('input_text.f2_journal_note') }}"
-                    image_entity: camera.grow_room_f2
+      - type: entities
+        title: Add Journal Entry
+        entities:
+          - entity: input_text.f2_journal_note
+            name: Note
 
-      - type: markdown
-        title: Journal History
-        content: |
-          {{ states('sensor.f2_journal_history') }}
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Save Note
+            icon: mdi:content-save
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              service_data:
+                room_id: f2
+                note: "{{ states('input_text.f2_journal_note') }}"
 
   - title: F3 Room
     path: f3
     icon: mdi:numeric-3-circle
     cards:
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            title: F3 - Flower Room 3
-            content: |
-              **Current Status:** {{ states('sensor.f3_grow_status') }}
-              
-              **Phase:** {{ state_attr('sensor.f3_grow_status', 'phase') }}
-              
-              **Target EC:** {{ state_attr('sensor.f3_grow_status', 'recommended_ec') }}
-              
-              **Dryback Target:** {{ state_attr('sensor.f3_grow_status', 'target_dryback') }}
-              
-              **Days to Harvest:** {{ state_attr('sensor.f3_grow_status', 'days_remaining') }}
+      - type: markdown
+        title: F3 - Flower Room 3
+        content: |
+          **Status:** {{ states('sensor.flower_room_3_grow_status') }}
+          **Phase:** {{ state_attr('sensor.flower_room_3_grow_status', 'phase') }}
+          **Target EC:** {{ state_attr('sensor.flower_room_3_grow_status', 'recommended_ec') }}
+          **Dryback:** {{ state_attr('sensor.flower_room_3_grow_status', 'target_dryback') }}
+          **Days to Harvest:** {{ state_attr('sensor.flower_room_3_grow_status', 'days_remaining') }}
 
-      - type: vertical-stack
+      - type: entities
         title: Cycle Management
+        entities:
+          - entity: input_datetime.f3_start_date
+            name: Start Date (Day 1 of Flower)
+
+      - type: horizontal-stack
         cards:
-          - type: entities
-            entities:
-              - entity: input_datetime.f3_start_date
-                name: Start Date (Day 1)
-          
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Generate Tasks
-                icon: mdi:calendar-plus
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.generate_tasks
-                  data:
-                    room_id: f3
-                    start_date: "{{ states('input_datetime.f3_start_date') }}"
-                  confirmation:
-                    text: Generate all Athena schedule tasks for F3?
-              
-              - type: button
-                name: Clear Tasks
-                icon: mdi:calendar-remove
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.clear_tasks
-                  data:
-                    room_id: f3
-                  confirmation:
-                    text: Clear all tasks for F3?
+          - type: button
+            name: Generate Tasks
+            icon: mdi:calendar-plus
+            tap_action:
+              action: call-service
+              service: grow_room_manager.generate_tasks
+              service_data:
+                room_id: f3
+                start_date: "{{ states('input_datetime.f3_start_date') }}"
+                calendar_entity: calendar.grow_calendar
+                todo_entity: todo.grow_tasks_f3
+              confirmation:
+                text: Generate all 35 Athena schedule tasks for F3?
 
       - type: todo-list
         entity: todo.grow_tasks_f3
         title: F3 Tasks
 
-      - type: vertical-stack
-        title: Journal Entry
-        cards:
-          - type: entities
-            entities:
-              - entity: input_text.f3_journal_note
-                name: Note
-          
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Save Note
-                icon: mdi:content-save
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.add_journal_entry
-                  data:
-                    room_id: f3
-                    note: "{{ states('input_text.f3_journal_note') }}"
-              
-              - type: button
-                name: Save with Photo
-                icon: mdi:camera
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.add_journal_entry
-                  data:
-                    room_id: f3
-                    note: "{{ states('input_text.f3_journal_note') }}"
-                    image_entity: camera.grow_room_f3
+      - type: entities
+        title: Add Journal Entry
+        entities:
+          - entity: input_text.f3_journal_note
+            name: Note
 
-      - type: markdown
-        title: Journal History
-        content: |
-          {{ states('sensor.f3_journal_history') }}
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Save Note
+            icon: mdi:content-save
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              service_data:
+                room_id: f3
+                note: "{{ states('input_text.f3_journal_note') }}"
 
   - title: Calendar
     path: calendar

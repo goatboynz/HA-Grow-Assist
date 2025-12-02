@@ -1,0 +1,75 @@
+blueprint:
+  name: Grow Room Daily Task Notification
+  description: >
+    Send a notification when there's a scheduled grow task for today.
+    Checks each morning and sends details about the task to your mobile device.
+  domain: automation
+  author: Grow Room Manager
+  input:
+    room_id:
+      name: Room ID
+      description: The grow room to monitor (e.g., f1, f2, f3)
+      selector:
+        text:
+      default: "f1"
+    check_time:
+      name: Check Time
+      description: Time to check for daily tasks
+      selector:
+        time:
+      default: "07:00:00"
+    notify_service:
+      name: Notification Service
+      description: The notification service to use (e.g., notify.mobile_app_phone)
+      selector:
+        text:
+      default: "notify.notify"
+    critical_only:
+      name: Critical Tasks Only
+      description: Only notify for critical/high priority tasks
+      selector:
+        boolean:
+      default: false
+
+trigger:
+  - platform: time
+    at: !input check_time
+
+action:
+  - service: grow_room_manager.get_today_tasks
+    data:
+      room_id: !input room_id
+
+  - wait_for_trigger:
+      - platform: event
+        event_type: grow_room_manager_task_today
+        event_data:
+          room_id: !input room_id
+    timeout: "00:00:05"
+    continue_on_timeout: true
+
+  - condition: template
+    value_template: "{{ wait.trigger is not none }}"
+
+  - condition: template
+    value_template: >
+      {% set critical_only = critical_only | default(false) %}
+      {% if critical_only %}
+        {{ wait.trigger.event.data.priority in ['critical', 'high'] }}
+      {% else %}
+        true
+      {% endif %}
+
+  - service: !input notify_service
+    data:
+      title: "🌿 {{ wait.trigger.event.data.room_id | upper }} - Day {{ wait.trigger.event.data.day }}"
+      message: >
+        {{ wait.trigger.event.data.title }}
+        
+        Priority: {{ wait.trigger.event.data.priority | title }}
+        Phase: {{ wait.trigger.event.data.phase }}
+      data:
+        tag: "grow_room_{{ wait.trigger.event.data.room_id }}"
+        group: "grow_room_manager"
+
+mode: single

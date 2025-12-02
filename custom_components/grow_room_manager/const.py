@@ -28,6 +28,9 @@ DRYBACK_FINISH: Final = "40-50%"
 SERVICE_ADD_JOURNAL: Final = "add_journal_entry"
 SERVICE_GENERATE_TASKS: Final = "generate_tasks"
 SERVICE_CLEAR_TASKS: Final = "clear_tasks"
+SERVICE_EXPORT_JOURNAL: Final = "export_journal"
+SERVICE_SET_START_DATE: Final = "set_start_date"
+SERVICE_GET_TODAY_TASKS: Final = "get_today_tasks"
 
 # Athena Pro Line Schedule - Maps day number to task info
 # Format: {day: {"title": str, "description": str, "category": str, "phase": str, ...}}

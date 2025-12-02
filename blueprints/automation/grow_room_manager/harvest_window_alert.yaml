@@ -1,0 +1,43 @@
+blueprint:
+  name: Grow Room Harvest Window Alert
+  description: >
+    Send a notification when a grow room enters the harvest window (Day 77-84).
+  domain: automation
+  author: Grow Room Manager
+  input:
+    room_sensor:
+      name: Room Status Sensor
+      description: The grow room status sensor to monitor
+      selector:
+        entity:
+          domain: sensor
+          integration: grow_room_manager
+    notify_service:
+      name: Notification Service
+      description: The notification service to use
+      selector:
+        text:
+      default: "notify.notify"
+
+trigger:
+  - platform: state
+    entity_id: !input room_sensor
+    to: "Day 77"
+
+action:
+  - service: !input notify_service
+    data:
+      title: "🎉 Harvest Window Open!"
+      message: >
+        {{ trigger.to_state.attributes.room_name }} has entered the harvest window!
+        
+        Current Day: {{ trigger.to_state.state }}
+        Phase: {{ trigger.to_state.attributes.phase }}
+        
+        Check trichomes and prepare for harvest.
+      data:
+        tag: "harvest_{{ trigger.to_state.attributes.room_id }}"
+        group: "grow_room_manager"
+        importance: high
+
+mode: single

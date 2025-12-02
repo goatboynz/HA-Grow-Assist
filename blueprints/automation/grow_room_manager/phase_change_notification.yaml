@@ -1,0 +1,53 @@
+blueprint:
+  name: Grow Room Phase Change Notification
+  description: >
+    Send a notification when a grow room changes phases (Stretch → Bulk → Finish).
+  domain: automation
+  author: Grow Room Manager
+  input:
+    room_sensor:
+      name: Room Status Sensor
+      description: The grow room status sensor to monitor
+      selector:
+        entity:
+          domain: sensor
+          integration: grow_room_manager
+    notify_service:
+      name: Notification Service
+      description: The notification service to use
+      selector:
+        text:
+      default: "notify.notify"
+
+trigger:
+  - platform: state
+    entity_id: !input room_sensor
+    attribute: phase
+
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.from_state.attributes.phase != trigger.to_state.attributes.phase 
+         and trigger.to_state.attributes.phase in ['Stretch', 'Bulk', 'Finish'] }}
+
+action:
+  - service: !input notify_service
+    data:
+      title: "🌱 Phase Change: {{ trigger.to_state.attributes.phase }}"
+      message: >
+        {{ trigger.to_state.attributes.room_name }} has entered the {{ trigger.to_state.attributes.phase }} phase!
+        
+        Current Day: {{ trigger.to_state.state }}
+        Target EC: {{ trigger.to_state.attributes.recommended_ec }}
+        Target Dryback: {{ trigger.to_state.attributes.target_dryback }}
+        
+        {% if trigger.to_state.attributes.phase == 'Bulk' %}
+        Remember: Implement vegetative steering with 30-40% dryback.
+        {% elif trigger.to_state.attributes.phase == 'Finish' %}
+        Remember: Switch to Athena Fade (zero nitrogen), reduce EC to 1.5.
+        {% endif %}
+      data:
+        tag: "phase_{{ trigger.to_state.attributes.room_id }}"
+        group: "grow_room_manager"
+
+mode: single

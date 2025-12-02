@@ -1,30 +1,22 @@
 # =============================================================================
 # GROW ROOM MANAGER - Example Configuration
 # =============================================================================
-# Add this to your configuration.yaml file
+# 
+# SETUP STEPS:
+# 1. Install the integration via HACS
+# 2. Go to Settings > Devices & Services > Add Integration
+# 3. Search for "Grow Room Manager" and add each room
+# 4. Add the helpers below to your configuration.yaml
+# 5. Create calendar and todo entities (see below)
+# 6. Restart Home Assistant
+#
 # =============================================================================
 
-# Grow Room Manager Integration
-grow_room_manager:
-  rooms:
-    - room_id: f1
-      name: "Flower Room 1"
-      calendar_entity: calendar.grow_calendar
-      todo_entity: todo.grow_tasks_f1
-    - room_id: f2
-      name: "Flower Room 2"
-      calendar_entity: calendar.grow_calendar
-      todo_entity: todo.grow_tasks_f2
-    - room_id: f3
-      name: "Flower Room 3"
-      calendar_entity: calendar.grow_calendar
-      todo_entity: todo.grow_tasks_f3
-
 # =============================================================================
-# REQUIRED HELPERS
+# REQUIRED HELPERS - Add to configuration.yaml
 # =============================================================================
 
-# Input datetime for setting start dates
+# Input datetime for setting start dates (one per room)
 input_datetime:
   f1_start_date:
     name: "F1 Start Date"
@@ -42,7 +34,7 @@ input_datetime:
     has_time: false
     icon: mdi:calendar-start
 
-# Input text for journal notes
+# Input text for journal notes (one per room)
 input_text:
   f1_journal_note:
     name: "F1 Journal Note"
@@ -58,87 +50,47 @@ input_text:
     icon: mdi:note-text
 
 # =============================================================================
-# COMMAND LINE SENSORS FOR JOURNAL HISTORY
+# OPTIONAL: Local Calendar (if not using Google Calendar)
 # =============================================================================
-# These sensors read the JSON journal files and format them for display
-
-command_line:
-  - sensor:
-      name: F1 Journal History
-      unique_id: f1_journal_history
-      command: >-
-        python3 -c "
-        import json
-        from pathlib import Path
-        try:
-            data = json.loads(Path('/config/grow_logs/f1.json').read_text())
-            entries = data[-10:][::-1]  # Last 10, reversed
-            for e in entries:
-                ts = e['timestamp'][:16].replace('T', ' ')
-                note = e['note'][:100]
-                img = f\"📷 [Photo]({e['image_url']})\" if e.get('image_url') else ''
-                print(f\"**{ts}**\\n{note} {img}\\n\")
-        except: print('No journal entries yet.')
-        "
-      scan_interval: 60
-      
-  - sensor:
-      name: F2 Journal History
-      unique_id: f2_journal_history
-      command: >-
-        python3 -c "
-        import json
-        from pathlib import Path
-        try:
-            data = json.loads(Path('/config/grow_logs/f2.json').read_text())
-            entries = data[-10:][::-1]
-            for e in entries:
-                ts = e['timestamp'][:16].replace('T', ' ')
-                note = e['note'][:100]
-                img = f\"📷 [Photo]({e['image_url']})\" if e.get('image_url') else ''
-                print(f\"**{ts}**\\n{note} {img}\\n\")
-        except: print('No journal entries yet.')
-        "
-      scan_interval: 60
-      
-  - sensor:
-      name: F3 Journal History
-      unique_id: f3_journal_history
-      command: >-
-        python3 -c "
-        import json
-        from pathlib import Path
-        try:
-            data = json.loads(Path('/config/grow_logs/f3.json').read_text())
-            entries = data[-10:][::-1]
-            for e in entries:
-                ts = e['timestamp'][:16].replace('T', ' ')
-                note = e['note'][:100]
-                img = f\"📷 [Photo]({e['image_url']})\" if e.get('image_url') else ''
-                print(f\"**{ts}**\\n{note} {img}\\n\")
-        except: print('No journal entries yet.')
-        "
-      scan_interval: 60
-
-# =============================================================================
-# LOCAL CALENDAR (if not using Google Calendar)
-# =============================================================================
-# Uncomment if you need a local calendar
+# Go to Settings > Devices & Services > Add Integration > Local Calendar
+# Or add to configuration.yaml:
 
 # calendar:
 #   - platform: local_calendar
 #     name: Grow Calendar
 
 # =============================================================================
-# LOCAL TODO LISTS
+# OPTIONAL: Local Todo Lists
 # =============================================================================
-# Create these via UI: Settings > Devices & Services > Helpers > Add Helper > To-do list
-# Or use the local_todo integration:
+# Go to Settings > Devices & Services > Add Integration > Local To-do
+# Create one list per room: "Grow Tasks F1", "Grow Tasks F2", "Grow Tasks F3"
 
-# todo:
-#   - platform: local_todo
-#     name: Grow Tasks F1
-#   - platform: local_todo
-#     name: Grow Tasks F2
-#   - platform: local_todo
-#     name: Grow Tasks F3
+# =============================================================================
+# OPTIONAL: Debug Logging
+# =============================================================================
+
+logger:
+  default: info
+  logs:
+    custom_components.grow_room_manager: debug
+
+# =============================================================================
+# SERVICE CALL EXAMPLES
+# =============================================================================
+# 
+# Generate tasks for a room:
+# service: grow_room_manager.generate_tasks
+# data:
+#   room_id: f1
+#   start_date: "2024-12-01"
+#   calendar_entity: calendar.grow_calendar
+#   todo_entity: todo.grow_tasks_f1
+#
+# Add journal entry:
+# service: grow_room_manager.add_journal_entry
+# data:
+#   room_id: f1
+#   note: "Plants looking great today!"
+#   image_entity: camera.grow_room_f1  # optional
+#
+# =============================================================================
