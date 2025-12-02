@@ -329,6 +329,7 @@ async def _generate_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
         # Create calendar event
         if calendar_entity:
             try:
+                # Try all-day event first (start_date/end_date)
                 await hass.services.async_call(
                     "calendar",
                     "create_event",
@@ -337,13 +338,32 @@ async def _generate_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
                         "summary": task_title,
                         "description": task_description,
                         "start_date": str(task_date),
-                        "end_date": str(task_date),
+                        "end_date": str(task_date + timedelta(days=1)),
                     },
                     blocking=True,
                 )
                 _LOGGER.debug("Created calendar event: %s on %s", task_title, task_date)
             except Exception as err:
-                _LOGGER.error("Failed to create calendar event: %s", err)
+                _LOGGER.warning("All-day event failed, trying timed event: %s", err)
+                try:
+                    # Fall back to timed event
+                    start_dt = datetime.combine(task_date, datetime.min.time().replace(hour=8))
+                    end_dt = datetime.combine(task_date, datetime.min.time().replace(hour=9))
+                    await hass.services.async_call(
+                        "calendar",
+                        "create_event",
+                        {
+                            "entity_id": calendar_entity,
+                            "summary": task_title,
+                            "description": task_description,
+                            "start_date_time": start_dt.isoformat(),
+                            "end_date_time": end_dt.isoformat(),
+                        },
+                        blocking=True,
+                    )
+                    _LOGGER.debug("Created timed calendar event: %s on %s", task_title, task_date)
+                except Exception as err2:
+                    _LOGGER.error("Failed to create calendar event: %s", err2)
         
         # Create todo item
         if todo_entity:
