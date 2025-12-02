@@ -569,6 +569,7 @@ class VegRoomBatchCountSensor(SensorEntity):
             "room_id": self._room_id,
             "batches": [
                 {
+                    "batch_id": b.get("batch_id"),  # Include batch_id for service calls
                     "name": b.get("batch_name"),
                     "stage": b.get("stage"),
                     "plants": b.get("plant_count", 0),

@@ -2,13 +2,13 @@
 # GROW ROOM MANAGER - Configuration
 # =============================================================================
 #
-# GOOD NEWS: No configuration.yaml changes needed for basic functionality!
+# NO CONFIGURATION NEEDED! Just add rooms via the UI:
 #
-# Just add rooms via the UI:
 # 1. Settings > Devices & Services > Add Integration
 # 2. Search "Grow Room Manager"
 # 3. Choose room type (Flower or Veg)
 # 4. Enter room details
+# 5. Done! Tasks auto-generate if calendar/todo configured.
 #
 # =============================================================================
 
@@ -22,8 +22,6 @@ logger:
 # OPTIONAL: Create calendar and todo lists for task generation
 # =============================================================================
 #
-# If you want to generate tasks to a calendar/todo list:
-#
 # 1. Add Local Calendar integration:
 #    Settings > Devices & Services > Add Integration > Local Calendar
 #
@@ -33,82 +31,8 @@ logger:
 # 3. When adding a room, select these entities in the config flow
 #
 # =============================================================================
-# REQUIRED HELPERS FOR DASHBOARD CARDS
-# =============================================================================
-# Add these to your configuration.yaml if using the dashboard cards
-
-# Journal Card Helpers
-input_text:
-  grow_journal_note:
-    name: Journal Note
-    max: 500
-    initial: ""
-
-input_select:
-  grow_journal_room:
-    name: Journal Room
-    options:
-      - f1
-      - f2
-      - f3
-      - veg
-    initial: f1
-
-# Veg Batch Manager Helpers
-  veg_batch_stage:
-    name: Batch Stage
-    options:
-      - Clone
-      - Pre-Veg
-      - Early Veg
-      - Late Veg
-      - Mother
-    initial: Clone
-  veg_batch_destination:
-    name: Destination Room
-    options:
-      - f1
-      - f2
-      - f3
-      - none
-    initial: f1
-
-input_text:
-  veg_batch_name:
-    name: Batch Name
-    max: 50
-    initial: ""
-  veg_batch_strain:
-    name: Strain
-    max: 50
-    initial: ""
-
-input_datetime:
-  veg_batch_start_date:
-    name: Batch Start Date
-    has_date: true
-    has_time: false
-
-input_number:
-  veg_batch_plant_count:
-    name: Plant Count
-    min: 1
-    max: 500
-    step: 1
-    initial: 24
-    mode: box
-
-# =============================================================================
 # SERVICE EXAMPLES - FLOWER ROOMS
 # =============================================================================
-#
-# Generate tasks (if calendar/todo configured):
-#   service: grow_room_manager.generate_tasks
-#   data:
-#     room_id: "f1"
-#     start_date: "2024-12-01"
-#     calendar_entity: calendar.grow_calendar
-#     todo_entity: todo.f1_tasks
 #
 # Add journal entry:
 #   service: grow_room_manager.add_journal_entry
@@ -123,13 +47,13 @@ input_number:
 #     note: "Day 21 defoliation complete"
 #     image_entity: camera.grow_room
 #
-# Get journal entries (fires event):
-#   service: grow_room_manager.get_journal
+# Generate tasks manually:
+#   service: grow_room_manager.generate_tasks
 #   data:
 #     room_id: "f1"
-#     limit: 20
+#     start_date: "2024-12-01"
 #
-# Set start date (updates config entry):
+# Set/change start date:
 #   service: grow_room_manager.set_start_date
 #   data:
 #     room_id: "f1"
@@ -155,22 +79,13 @@ input_number:
 #     plant_count: 24
 #     strain: "OG Kush"
 #     destination_room: "f1"
-#     notes: "Clones from mother #3"
 #
-# Update batch stage (e.g., clones rooted, moving to pre-veg):
+# Update batch stage:
 #   service: grow_room_manager.update_veg_batch
 #   data:
 #     room_id: "veg"
 #     batch_id: "og_kush_dec_2024_20241201_120000"
 #     stage: "Pre-Veg"
-#     notes: "All clones rooted successfully"
-#
-# Update plant count (some didn't make it):
-#   service: grow_room_manager.update_veg_batch
-#   data:
-#     room_id: "veg"
-#     batch_id: "og_kush_dec_2024_20241201_120000"
-#     plant_count: 20
 #
 # Move batch to flower room:
 #   service: grow_room_manager.move_to_flower
@@ -178,19 +93,10 @@ input_number:
 #     room_id: "veg"
 #     batch_id: "og_kush_dec_2024_20241201_120000"
 #     flower_room_id: "f1"
-#     flower_start_date: "2024-12-15"
-#
-# List all active batches:
-#   service: grow_room_manager.list_veg_batches
-#   data:
-#     room_id: "veg"
-#     active_only: true
 #
 # =============================================================================
 # AUTOMATION EXAMPLES
 # =============================================================================
-#
-# Notify when batch is ready for flower:
 #
 # automation:
 #   - alias: "Veg Batch Ready for Flower"
@@ -204,11 +110,7 @@ input_number:
 #       - service: notify.mobile_app
 #         data:
 #           title: "🌱 Batch Ready for Flower"
-#           message: >-
-#             {{ trigger.event.data.batch_name }} is now in Late Veg
-#             and ready to move to flower room!
-#
-# Notify when batch moved to flower:
+#           message: "{{ trigger.event.data.batch_name }} is ready!"
 #
 #   - alias: "Batch Moved to Flower"
 #     trigger:
@@ -217,39 +119,16 @@ input_number:
 #     action:
 #       - service: notify.mobile_app
 #         data:
-#           title: "🌸 Batch Moved to Flower"
-#           message: >-
-#             {{ trigger.event.data.batch_name }} moved to 
-#             {{ trigger.event.data.flower_room_id }}. 
-#             Flower cycle starts {{ trigger.event.data.flower_start_date }}.
-#
-# Daily journal reminder:
-#
-#   - alias: "Daily Journal Reminder"
-#     trigger:
-#       - platform: time
-#         at: "20:00:00"
-#     action:
-#       - service: notify.mobile_app
-#         data:
-#           title: "📝 Grow Journal Reminder"
-#           message: "Don't forget to log your observations today!"
+#           title: "🌸 Batch Moved"
+#           message: "{{ trigger.event.data.batch_name }} → {{ trigger.event.data.flower_room_id }}"
 #
 # =============================================================================
-# JOURNAL STORAGE
+# FILE STORAGE LOCATIONS
 # =============================================================================
 #
-# Journal entries are stored in:
-#   /config/grow_logs/{room_id}.json
-#
-# Each entry contains:
-#   - timestamp: ISO format datetime
-#   - note: Your text note
-#   - image_path: Path to saved image (if camera used)
-#   - image_url: URL to view image in browser
-#
-# Exports are saved to:
-#   /config/www/grow_logs/{room_id}_export_{timestamp}.csv
-#   /config/www/grow_logs/{room_id}_export_{timestamp}.json
+# Journal entries: /config/grow_logs/{room_id}.json
+# Veg batches:     /config/grow_logs/{room_id}_batches.json
+# Snapshots:       /config/www/grow_logs/{room_id}/
+# Exports:         /config/www/grow_logs/
 #
 # =============================================================================

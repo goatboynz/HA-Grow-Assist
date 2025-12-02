@@ -1,23 +1,13 @@
 # =============================================================================
-# JOURNAL CARD - Enhanced
+# JOURNAL CARD - Simple Version
 # =============================================================================
-# Add journal entries with text input and view recent entries
+# Add journal entries using quick buttons - no helpers needed!
 #
-# REQUIRED: Add these helpers to your configuration.yaml:
-#
-# input_text:
-#   grow_journal_note:
-#     name: Journal Note
-#     max: 500
-#
-# input_select:
-#   grow_journal_room:
-#     name: Room
-#     options:
-#       - f1
-#       - f2
-#       - f3
-#       - veg
+# For custom notes, use Developer Tools > Services:
+#   service: grow_room_manager.add_journal_entry
+#   data:
+#     room_id: f1
+#     note: "Your custom note here"
 #
 # =============================================================================
 
@@ -25,54 +15,25 @@ type: vertical-stack
 cards:
   - type: custom:mushroom-title-card
     title: "📝 Grow Journal"
-    subtitle: "Record notes and observations"
+    subtitle: "Quick notes and observations"
 
-  # Room selector and entry count
-  - type: horizontal-stack
-    cards:
-      - type: entity
-        entity: input_select.grow_journal_room
-        name: "Room"
-      - type: entity
-        entity: sensor.flower_room_1_journal_entries
-        name: "F1 Entries"
-      - type: entity
-        entity: sensor.veg_room_journal_entries
-        name: "Veg Entries"
-
-  # Note input
-  - type: entities
+  # Entry counts per room
+  - type: glance
+    title: "Journal Entries"
     entities:
-      - entity: input_text.grow_journal_note
-        name: "📝 Your Note"
+      - entity: sensor.flower_room_1_journal_entries
+        name: "F1"
+      - entity: sensor.flower_room_2_journal_entries
+        name: "F2"
+      - entity: sensor.flower_room_3_journal_entries
+        name: "F3"
+      - entity: sensor.veg_room_journal_entries
+        name: "Veg"
 
-  # Add entry button
-  - type: horizontal-stack
-    cards:
-      - type: button
-        name: "💾 Save Note"
-        icon: mdi:content-save
-        tap_action:
-          action: call-service
-          service: grow_room_manager.add_journal_entry
-          data:
-            room_id: "{{ states('input_select.grow_journal_room') }}"
-            note: "{{ states('input_text.grow_journal_note') }}"
-      - type: button
-        name: "📷 Save with Photo"
-        icon: mdi:camera
-        tap_action:
-          action: call-service
-          service: grow_room_manager.add_journal_entry
-          data:
-            room_id: "{{ states('input_select.grow_journal_room') }}"
-            note: "{{ states('input_text.grow_journal_note') }}"
-            image_entity: camera.grow_room  # Change to your camera entity
-
-  # Quick notes
+  # F1 Quick Notes
   - type: custom:mushroom-title-card
     title: ""
-    subtitle: "⚡ Quick Notes"
+    subtitle: "🌸 Flower Room 1"
 
   - type: horizontal-stack
     cards:
@@ -83,89 +44,152 @@ cards:
           action: call-service
           service: grow_room_manager.add_journal_entry
           data:
-            room_id: "{{ states('input_select.grow_journal_room') }}"
+            room_id: f1
             note: "Quick check - all plants looking healthy"
       - type: button
-        name: "💧 Watered"
+        name: "💧 Fed"
         icon: mdi:water
         tap_action:
           action: call-service
           service: grow_room_manager.add_journal_entry
           data:
-            room_id: "{{ states('input_select.grow_journal_room') }}"
-            note: "Watered/fed plants"
+            room_id: f1
+            note: "Watered/fed plants - nutrients mixed fresh"
       - type: button
-        name: "🐛 IPM Done"
+        name: "🐛 IPM"
         icon: mdi:bug
         tap_action:
           action: call-service
           service: grow_room_manager.add_journal_entry
           data:
-            room_id: "{{ states('input_select.grow_journal_room') }}"
+            room_id: f1
             note: "IPM spray application completed"
 
   - type: horizontal-stack
     cards:
       - type: button
-        name: "✂️ Defoliated"
+        name: "✂️ Pruned"
         icon: mdi:content-cut
         tap_action:
           action: call-service
           service: grow_room_manager.add_journal_entry
           data:
-            room_id: "{{ states('input_select.grow_journal_room') }}"
+            room_id: f1
             note: "Defoliation/pruning completed"
       - type: button
-        name: "⚠️ Issue Found"
-        icon: mdi:alert
-        tap_action:
-          action: call-service
-          service: grow_room_manager.add_journal_entry
-          data:
-            room_id: "{{ states('input_select.grow_journal_room') }}"
-            note: "Issue found - needs attention"
-      - type: button
-        name: "📊 EC/pH Check"
+        name: "📊 EC Check"
         icon: mdi:test-tube
         tap_action:
           action: call-service
           service: grow_room_manager.add_journal_entry
           data:
-            room_id: "{{ states('input_select.grow_journal_room') }}"
+            room_id: f1
             note: "EC/pH levels checked and adjusted"
+      - type: button
+        name: "⚠️ Issue"
+        icon: mdi:alert
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: f1
+            note: "Issue found - needs attention (add details via service call)"
+
+  # Veg Room Quick Notes
+  - type: custom:mushroom-title-card
+    title: ""
+    subtitle: "🌱 Veg Room"
+
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "✅ All Good"
+        icon: mdi:check-circle
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "Quick check - all plants looking healthy"
+      - type: button
+        name: "💧 Fed"
+        icon: mdi:water
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "Watered/fed plants"
+      - type: button
+        name: "🐛 IPM"
+        icon: mdi:bug
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "IPM spray application completed"
+
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "🌱 Clones"
+        icon: mdi:sprout
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "Checked clones - rooting progress noted"
+      - type: button
+        name: "✂️ Cuttings"
+        icon: mdi:content-cut
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "Took cuttings from mother plants"
+      - type: button
+        name: "📈 Stage Up"
+        icon: mdi:arrow-up
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "Plants moved to next growth stage"
 
   # Recent entries display
   - type: markdown
     content: |
       ---
-      ### 📖 Recent Entry
+      ### 📖 Recent Entries
       
-      **Room:** {{ states('input_select.grow_journal_room') }}
+      **F1 Last Entry:** {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_date') or 'None' }}
+      > {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_preview') or 'No entries' }}
       
-      {% set room = states('input_select.grow_journal_room') %}
-      {% if room == 'f1' %}
-      {% set sensor = 'sensor.flower_room_1_journal_entries' %}
-      {% elif room == 'f2' %}
-      {% set sensor = 'sensor.flower_room_2_journal_entries' %}
-      {% elif room == 'f3' %}
-      {% set sensor = 'sensor.flower_room_3_journal_entries' %}
-      {% elif room == 'veg' %}
-      {% set sensor = 'sensor.veg_room_journal_entries' %}
-      {% else %}
-      {% set sensor = 'sensor.flower_room_1_journal_entries' %}
-      {% endif %}
-      
-      **Last Entry:** {{ state_attr(sensor, 'last_entry_date') or 'None' }}
-      
-      {{ state_attr(sensor, 'last_entry_preview') or 'No entries yet' }}
+      **Veg Last Entry:** {{ state_attr('sensor.veg_room_journal_entries', 'last_entry_date') or 'None' }}
+      > {{ state_attr('sensor.veg_room_journal_entries', 'last_entry_preview') or 'No entries' }}
 
-  # Export button
-  - type: button
-    name: "📤 Export Journal"
-    icon: mdi:export
-    tap_action:
-      action: call-service
-      service: grow_room_manager.export_journal
-      data:
-        room_id: "{{ states('input_select.grow_journal_room') }}"
-        format: csv
+  # Export buttons
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "📤 Export F1"
+        icon: mdi:export
+        tap_action:
+          action: call-service
+          service: grow_room_manager.export_journal
+          data:
+            room_id: f1
+            format: csv
+      - type: button
+        name: "📤 Export Veg"
+        icon: mdi:export
+        tap_action:
+          action: call-service
+          service: grow_room_manager.export_journal
+          data:
+            room_id: veg
+            format: csv
