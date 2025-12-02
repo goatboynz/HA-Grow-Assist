@@ -47,6 +47,24 @@ Or manually: HACS → Custom repositories → Add `https://github.com/goatboynz/
 
 **That's it! No configuration.yaml changes needed.**
 
+### 3. Add the Dashboard
+
+1. **Settings** → **Dashboards** → **Add Dashboard**
+2. Name it "Grow Rooms"
+3. Open the new dashboard, click **Edit** (pencil icon)
+4. Click the 3 dots menu → **Raw configuration editor**
+5. Delete everything and paste contents of `lovelace/grow_room_dashboard.yaml`
+6. Save
+
+The dashboard includes:
+- **Overview** - All rooms at a glance
+- **Veg** - Batch management with quick-add buttons
+- **F1/F2/F3** - Individual flower room pages
+- **Journal** - Quick notes for all rooms
+- **Feeding** - Nutrient calculator
+- **Settings** - Start dates and task generation
+- **Guide** - Athena Pro Line reference
+
 ---
 
 ## 🌸 Flower Rooms

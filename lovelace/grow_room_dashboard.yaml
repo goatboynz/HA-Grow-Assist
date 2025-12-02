@@ -1,15 +1,9 @@
 # =============================================================================
 # GROW ROOM MANAGER - Complete Dashboard
 # =============================================================================
-#
-# HOW TO INSTALL:
-# 1. Go to Settings > Dashboards > Add Dashboard
-# 2. Name it "Grow Rooms" 
-# 3. Open the new dashboard, click Edit (pencil icon)
-# 4. Click the 3 dots menu > Raw configuration editor
-# 5. Delete everything and paste this entire file
-# 6. Save
-#
+# This dashboard is auto-registered by the integration.
+# You can also manually add it: Settings > Dashboards > Add Dashboard
+# Then paste this file in Raw Configuration Editor.
 # =============================================================================
 
 title: Grow Room Manager
@@ -17,23 +11,22 @@ views:
   # ===========================================================================
   # HOME - Overview of all rooms
   # ===========================================================================
-  - title: Home
+  - title: Overview
     path: home
     icon: mdi:home
     cards:
       - type: markdown
         content: |
           # 🌿 Grow Room Manager
-          
-          Welcome! Use the tabs above to view each room or access settings.
+          Quick overview of all your grow rooms.
 
-      # All Rooms Status
+      # Flower Rooms Overview
       - type: horizontal-stack
         cards:
           - type: vertical-stack
             cards:
               - type: markdown
-                content: "## F1"
+                content: "### 🌸 F1"
               - type: entity
                 entity: sensor.flower_room_1_grow_status
                 name: Status
@@ -49,7 +42,7 @@ views:
           - type: vertical-stack
             cards:
               - type: markdown
-                content: "## F2"
+                content: "### 🌸 F2"
               - type: entity
                 entity: sensor.flower_room_2_grow_status
                 name: Status
@@ -61,7 +54,7 @@ views:
           - type: vertical-stack
             cards:
               - type: markdown
-                content: "## F3"
+                content: "### 🌸 F3"
               - type: entity
                 entity: sensor.flower_room_3_grow_status
                 name: Status
@@ -70,6 +63,18 @@ views:
                 name: Progress
                 min: 0
                 max: 100
+
+      # Veg Room Overview
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "### 🌱 Veg Room"
+          - type: entity
+            entity: sensor.veg_room_status
+            name: Status
+          - type: entity
+            entity: sensor.veg_room_active_batches
+            name: Active Batches
 
       # Upcoming Tasks
       - type: entities
@@ -85,6 +90,9 @@ views:
           - entity: sensor.flower_room_3_next_task
             name: F3
             icon: mdi:numeric-3-circle
+          - entity: sensor.veg_room_next_task
+            name: Veg
+            icon: mdi:sprout
 
       # Quick Reference
       - type: markdown
@@ -97,48 +105,197 @@ views:
           | Finish | 56-84 | 1.5 | 40-50% |
 
   # ===========================================================================
-  # ROOM F1
+  # VEG ROOM
+  # ===========================================================================
+  - title: Veg
+    path: veg
+    icon: mdi:sprout
+    cards:
+      - type: markdown
+        content: |
+          # 🌱 Veg Room
+          Track clones, veg plants, and mothers.
+
+      # Status
+      - type: entities
+        title: "📊 Status"
+        entities:
+          - entity: sensor.veg_room_status
+            name: Room Status
+          - entity: sensor.veg_room_active_batches
+            name: Active Batches
+          - entity: sensor.veg_room_next_task
+            name: Next Task
+
+      # Batches by Stage
+      - type: markdown
+        title: "📦 Batches by Stage"
+        content: >-
+          {% set batches = state_attr('sensor.veg_room_status', 'batches_by_stage') %}
+          {% if batches and batches | length > 0 %}
+          | Stage | Batches | Plants |
+          |-------|---------|--------|
+          {% for stage, data in batches.items() %}
+          | {{ stage }} | {{ data.count }} | {{ data.plants }} |
+          {% endfor %}
+          
+          **Total Plants:** {{ state_attr('sensor.veg_room_status', 'total_plants') }}
+          {% else %}
+          No active batches. Add one below!
+          {% endif %}
+
+      # Quick Add Batches
+      - type: markdown
+        content: "### ⚡ Quick Add Batch"
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "🌱 24 Clones"
+            icon: mdi:sprout
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_veg_batch
+              data:
+                room_id: veg
+                batch_name: "Clones {{ now().strftime('%b %d') }}"
+                start_date: "{{ now().strftime('%Y-%m-%d') }}"
+                stage: Clone
+                plant_count: 24
+                destination_room: f1
+          - type: button
+            name: "🌱 12 Clones"
+            icon: mdi:sprout-outline
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_veg_batch
+              data:
+                room_id: veg
+                batch_name: "Clones {{ now().strftime('%b %d') }}"
+                start_date: "{{ now().strftime('%Y-%m-%d') }}"
+                stage: Clone
+                plant_count: 12
+                destination_room: f1
+          - type: button
+            name: "👑 Mother"
+            icon: mdi:crown
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_veg_batch
+              data:
+                room_id: veg
+                batch_name: "Mother {{ now().strftime('%b %d') }}"
+                start_date: "{{ now().strftime('%Y-%m-%d') }}"
+                stage: Mother
+                plant_count: 1
+                destination_room: none
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "🌿 Veg → F1"
+            icon: mdi:leaf
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_veg_batch
+              data:
+                room_id: veg
+                batch_name: "Veg {{ now().strftime('%b %d') }}"
+                start_date: "{{ now().strftime('%Y-%m-%d') }}"
+                stage: Early Veg
+                plant_count: 24
+                destination_room: f1
+          - type: button
+            name: "🌿 Veg → F2"
+            icon: mdi:leaf
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_veg_batch
+              data:
+                room_id: veg
+                batch_name: "Veg {{ now().strftime('%b %d') }}"
+                start_date: "{{ now().strftime('%Y-%m-%d') }}"
+                stage: Early Veg
+                plant_count: 24
+                destination_room: f2
+          - type: button
+            name: "🌿 Veg → F3"
+            icon: mdi:leaf
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_veg_batch
+              data:
+                room_id: veg
+                batch_name: "Veg {{ now().strftime('%b %d') }}"
+                start_date: "{{ now().strftime('%Y-%m-%d') }}"
+                stage: Early Veg
+                plant_count: 24
+                destination_room: f3
+
+      # Active Batch Details
+      - type: markdown
+        title: "📋 Active Batches"
+        content: >-
+          {% set batches = state_attr('sensor.veg_room_active_batches', 'batches') %}
+          {% if batches and batches | length > 0 %}
+          {% for b in batches %}
+          **{{ b.name }}** `{{ b.stage }}`
+          - 🌱 {{ b.plants }} plants | 🧬 {{ b.strain or 'Unknown' }}
+          - 📅 {{ b.start_date }} | 🎯 {{ b.destination or 'TBD' }}
+          - 🔑 `{{ b.batch_id }}`
+          
+          {% endfor %}
+          {% else %}
+          No active batches.
+          {% endif %}
+
+      # Environment Targets
+      - type: markdown
+        title: "🌡️ Veg Environment"
+        content: |
+          | Parameter | Target |
+          |-----------|--------|
+          | Day Temp | 75-82°F (24-28°C) |
+          | Night Temp | 68-75°F (20-24°C) |
+          | Humidity | 55-70% RH |
+          | VPD | 0.8-1.2 kPa |
+          | pH | 5.8-6.2 |
+          | EC | {{ state_attr('sensor.veg_room_status', 'recommended_ec') or '1.0-2.2' }} |
+
+  # ===========================================================================
+  # FLOWER ROOM 1
   # ===========================================================================
   - title: F1
     path: f1
     icon: mdi:numeric-1-circle
     cards:
-      # Header with status
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              # 🌿 Flower Room 1
-              {% set s = 'sensor.flower_room_1_grow_status' %}
-              {% set status = states(s) %}
-              {% set phase = state_attr(s, 'phase') %}
-              {% set week = state_attr(s, 'current_week') %}
-              {% set harvest = state_attr(s, 'harvest_window') %}
-              
-              {% if status != 'Not Started' and status != 'unknown' %}
-              ## {{ status }} | Week {{ week }} | {{ phase }} Phase
-              {% if harvest %}
-              ### 🎉 HARVEST WINDOW OPEN! 🎉
-              {% endif %}
-              {% else %}
-              ## ⏳ Not Started
-              Go to **Settings** tab to configure start date.
-              {% endif %}
+      - type: markdown
+        content: |
+          # 🌸 Flower Room 1
+          {% set s = 'sensor.flower_room_1_grow_status' %}
+          {% set status = states(s) %}
+          {% set phase = state_attr(s, 'phase') %}
+          {% set week = state_attr(s, 'current_week') %}
+          {% set harvest = state_attr(s, 'harvest_window') %}
+          {% if status != 'Not Started' and status != 'unknown' %}
+          ## {{ status }} | Week {{ week }} | {{ phase }}
+          {% if harvest %}🎉 **HARVEST WINDOW OPEN!**{% endif %}
+          {% else %}
+          ## ⏳ Not Started - Set start date in Settings
+          {% endif %}
 
-          - type: gauge
-            entity: sensor.flower_room_1_grow_progress
-            name: Cycle Progress
-            min: 0
-            max: 100
-            severity:
-              green: 80
-              yellow: 40
-              red: 0
+      - type: gauge
+        entity: sensor.flower_room_1_grow_progress
+        name: Cycle Progress
+        min: 0
+        max: 100
+        severity:
+          green: 80
+          yellow: 40
+          red: 0
 
-      # Current Targets
       - type: entities
         title: "🎯 Current Targets"
-        show_header_toggle: false
         entities:
           - type: attribute
             entity: sensor.flower_room_1_grow_status
@@ -156,36 +313,28 @@ views:
             name: Days to Harvest
             icon: mdi:calendar-clock
 
-      # Environmental Targets
       - type: entities
-        title: "🌡️ Environmental Targets"
-        show_header_toggle: false
+        title: "🌡️ Environment Targets"
         entities:
           - type: attribute
             entity: sensor.flower_room_1_grow_status
             attribute: target_temp_day
-            name: Day Temperature
-            icon: mdi:thermometer
+            name: Day Temp
           - type: attribute
             entity: sensor.flower_room_1_grow_status
             attribute: target_temp_night
-            name: Night Temperature
-            icon: mdi:thermometer-low
+            name: Night Temp
           - type: attribute
             entity: sensor.flower_room_1_grow_status
             attribute: target_humidity
             name: Humidity
-            icon: mdi:water-outline
           - type: attribute
             entity: sensor.flower_room_1_grow_status
             attribute: target_vpd
             name: VPD
-            icon: mdi:gauge
 
-      # Next Task
       - type: entities
-        title: "📋 Next Scheduled Task"
-        show_header_toggle: false
+        title: "📋 Next Task"
         entities:
           - entity: sensor.flower_room_1_next_task
             name: Task
@@ -193,175 +342,484 @@ views:
             entity: sensor.flower_room_1_next_task
             attribute: task_date
             name: Date
-            icon: mdi:calendar
           - type: attribute
             entity: sensor.flower_room_1_next_task
             attribute: days_until
             name: Days Until
-            icon: mdi:clock-outline
-          - type: attribute
-            entity: sensor.flower_room_1_next_task
-            attribute: priority
-            name: Priority
-            icon: mdi:alert-circle
 
-      # Journal
-      - type: vertical-stack
+      - type: markdown
         title: "📝 Journal"
+        content: |
+          **Entries:** {{ states('sensor.flower_room_1_journal_entries') }}
+          **Last:** {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_date') or 'None' }}
+          > {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_preview') or 'No entries' }}
+
+      - type: horizontal-stack
         cards:
-          - type: entity
-            entity: sensor.flower_room_1_journal_entries
-            name: Total Entries
-          - type: markdown
-            content: |
-              **Last Entry:** {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_date') or 'None' }}
-              
-              {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_preview') or 'No entries yet' }}
           - type: button
-            name: Add Quick Note
-            icon: mdi:notebook-plus
+            name: "✅ All Good"
+            icon: mdi:check
             tap_action:
               action: call-service
               service: grow_room_manager.add_journal_entry
-              service_data:
+              data:
                 room_id: f1
-                note: "Quick check - all good"
+                note: "Quick check - all plants healthy"
+          - type: button
+            name: "💧 Fed"
+            icon: mdi:water
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f1
+                note: "Fed plants - nutrients mixed fresh"
+          - type: button
+            name: "🐛 IPM"
+            icon: mdi:bug
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f1
+                note: "IPM spray completed"
 
   # ===========================================================================
-  # ROOM F2
+  # FLOWER ROOM 2
   # ===========================================================================
   - title: F2
     path: f2
     icon: mdi:numeric-2-circle
     cards:
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              # 🌿 Flower Room 2
-              {% set s = 'sensor.flower_room_2_grow_status' %}
-              {% set status = states(s) %}
-              {% set phase = state_attr(s, 'phase') %}
-              {% set week = state_attr(s, 'current_week') %}
-              
-              {% if status != 'Not Started' and status != 'unknown' %}
-              ## {{ status }} | Week {{ week }} | {{ phase }} Phase
-              {% else %}
-              ## ⏳ Not Started
-              {% endif %}
+      - type: markdown
+        content: |
+          # 🌸 Flower Room 2
+          {% set s = 'sensor.flower_room_2_grow_status' %}
+          {% set status = states(s) %}
+          {% set phase = state_attr(s, 'phase') %}
+          {% set week = state_attr(s, 'current_week') %}
+          {% if status != 'Not Started' and status != 'unknown' %}
+          ## {{ status }} | Week {{ week }} | {{ phase }}
+          {% else %}
+          ## ⏳ Not Started
+          {% endif %}
 
-          - type: gauge
-            entity: sensor.flower_room_2_grow_progress
-            name: Cycle Progress
-            min: 0
-            max: 100
+      - type: gauge
+        entity: sensor.flower_room_2_grow_progress
+        name: Progress
+        min: 0
+        max: 100
 
       - type: entities
-        title: "🎯 Current Targets"
+        title: "🎯 Targets"
         entities:
           - type: attribute
             entity: sensor.flower_room_2_grow_status
             attribute: recommended_ec
-            name: Target EC
+            name: EC
           - type: attribute
             entity: sensor.flower_room_2_grow_status
             attribute: target_dryback
-            name: Target Dryback
+            name: Dryback
           - type: attribute
             entity: sensor.flower_room_2_grow_status
             attribute: days_remaining
-            name: Days to Harvest
+            name: Days Left
 
       - type: entities
         title: "📋 Next Task"
         entities:
           - entity: sensor.flower_room_2_next_task
-            name: Task
           - type: attribute
             entity: sensor.flower_room_2_next_task
             attribute: days_until
             name: Days Until
 
-      - type: entity
-        entity: sensor.flower_room_2_journal_entries
-        name: Journal Entries
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "✅ Good"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f2
+                note: "Quick check - all good"
+          - type: button
+            name: "💧 Fed"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f2
+                note: "Fed plants"
 
   # ===========================================================================
-  # ROOM F3
+  # FLOWER ROOM 3
   # ===========================================================================
   - title: F3
     path: f3
     icon: mdi:numeric-3-circle
     cards:
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              # 🌿 Flower Room 3
-              {% set s = 'sensor.flower_room_3_grow_status' %}
-              {% set status = states(s) %}
-              {% set phase = state_attr(s, 'phase') %}
-              {% set week = state_attr(s, 'current_week') %}
-              
-              {% if status != 'Not Started' and status != 'unknown' %}
-              ## {{ status }} | Week {{ week }} | {{ phase }} Phase
-              {% else %}
-              ## ⏳ Not Started
-              {% endif %}
+      - type: markdown
+        content: |
+          # 🌸 Flower Room 3
+          {% set s = 'sensor.flower_room_3_grow_status' %}
+          {% set status = states(s) %}
+          {% set phase = state_attr(s, 'phase') %}
+          {% set week = state_attr(s, 'current_week') %}
+          {% if status != 'Not Started' and status != 'unknown' %}
+          ## {{ status }} | Week {{ week }} | {{ phase }}
+          {% else %}
+          ## ⏳ Not Started
+          {% endif %}
 
-          - type: gauge
-            entity: sensor.flower_room_3_grow_progress
-            name: Cycle Progress
-            min: 0
-            max: 100
+      - type: gauge
+        entity: sensor.flower_room_3_grow_progress
+        name: Progress
+        min: 0
+        max: 100
 
       - type: entities
-        title: "🎯 Current Targets"
+        title: "🎯 Targets"
         entities:
           - type: attribute
             entity: sensor.flower_room_3_grow_status
             attribute: recommended_ec
-            name: Target EC
+            name: EC
           - type: attribute
             entity: sensor.flower_room_3_grow_status
             attribute: target_dryback
-            name: Target Dryback
+            name: Dryback
           - type: attribute
             entity: sensor.flower_room_3_grow_status
             attribute: days_remaining
-            name: Days to Harvest
+            name: Days Left
 
       - type: entities
         title: "📋 Next Task"
         entities:
           - entity: sensor.flower_room_3_next_task
-            name: Task
           - type: attribute
             entity: sensor.flower_room_3_next_task
             attribute: days_until
             name: Days Until
 
-      - type: entity
-        entity: sensor.flower_room_3_journal_entries
-        name: Journal Entries
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "✅ Good"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f3
+                note: "Quick check - all good"
+          - type: button
+            name: "💧 Fed"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f3
+                note: "Fed plants"
 
   # ===========================================================================
-  # CALENDAR
+  # JOURNAL
   # ===========================================================================
-  - title: Calendar
-    path: calendar
-    icon: mdi:calendar
+  - title: Journal
+    path: journal
+    icon: mdi:notebook
     cards:
-      - type: calendar
-        entities:
-          - calendar.grow_calendar
-        initial_view: listWeek
+      - type: markdown
+        content: |
+          # 📝 Grow Journal
+          Quick notes for all rooms.
+
+      - type: markdown
+        content: "### 🌸 Flower Room 1"
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "✅ Good"
+            icon: mdi:check
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f1
+                note: "Quick check - all plants healthy"
+          - type: button
+            name: "💧 Fed"
+            icon: mdi:water
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f1
+                note: "Fed plants"
+          - type: button
+            name: "🐛 IPM"
+            icon: mdi:bug
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f1
+                note: "IPM spray completed"
+          - type: button
+            name: "✂️ Pruned"
+            icon: mdi:content-cut
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f1
+                note: "Defoliation completed"
 
       - type: markdown
         content: |
-          **Tip:** If you don't see events, make sure you selected a calendar when adding the room.
+          **Last:** {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_date') or 'None' }}
+          > {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_preview') or 'No entries' }}
+
+      - type: markdown
+        content: "### 🌸 Flower Room 2"
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "✅ Good"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f2
+                note: "Quick check - all plants healthy"
+          - type: button
+            name: "💧 Fed"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f2
+                note: "Fed plants"
+          - type: button
+            name: "🐛 IPM"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f2
+                note: "IPM spray completed"
+          - type: button
+            name: "✂️ Pruned"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f2
+                note: "Defoliation completed"
+
+      - type: markdown
+        content: "### 🌸 Flower Room 3"
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "✅ Good"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f3
+                note: "Quick check - all plants healthy"
+          - type: button
+            name: "💧 Fed"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f3
+                note: "Fed plants"
+          - type: button
+            name: "🐛 IPM"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f3
+                note: "IPM spray completed"
+          - type: button
+            name: "✂️ Pruned"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: f3
+                note: "Defoliation completed"
+
+      - type: markdown
+        content: "### 🌱 Veg Room"
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "✅ Good"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: veg
+                note: "Quick check - all plants healthy"
+          - type: button
+            name: "💧 Fed"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: veg
+                note: "Fed plants"
+          - type: button
+            name: "🌱 Clones"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: veg
+                note: "Checked clones - rooting progress"
+          - type: button
+            name: "✂️ Cuttings"
+            tap_action:
+              action: call-service
+              service: grow_room_manager.add_journal_entry
+              data:
+                room_id: veg
+                note: "Took cuttings from mothers"
+
+      # Export
+      - type: markdown
+        content: "### 📤 Export Journals"
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "F1 CSV"
+            icon: mdi:export
+            tap_action:
+              action: call-service
+              service: grow_room_manager.export_journal
+              data:
+                room_id: f1
+                format: csv
+          - type: button
+            name: "F2 CSV"
+            icon: mdi:export
+            tap_action:
+              action: call-service
+              service: grow_room_manager.export_journal
+              data:
+                room_id: f2
+                format: csv
+          - type: button
+            name: "F3 CSV"
+            icon: mdi:export
+            tap_action:
+              action: call-service
+              service: grow_room_manager.export_journal
+              data:
+                room_id: f3
+                format: csv
+          - type: button
+            name: "Veg CSV"
+            icon: mdi:export
+            tap_action:
+              action: call-service
+              service: grow_room_manager.export_journal
+              data:
+                room_id: veg
+                format: csv
+
+  # ===========================================================================
+  # FEEDING CALCULATOR
+  # ===========================================================================
+  - title: Feeding
+    path: feeding
+    icon: mdi:beaker
+    cards:
+      - type: markdown
+        content: |
+          # 🧪 Athena Feeding Calculator
+
+      - type: markdown
+        title: "🌸 Flower Feeding"
+        content: |
+          {% set rooms = [
+            ('F1', 'sensor.flower_room_1_grow_status'),
+            ('F2', 'sensor.flower_room_2_grow_status'),
+            ('F3', 'sensor.flower_room_3_grow_status')
+          ] %}
+          {% for name, sensor in rooms %}
+          {% set phase = state_attr(sensor, 'phase') %}
+          {% set day = state_attr(sensor, 'current_day') %}
+          {% if phase and phase != 'Not Started' %}
+          **{{ name }}:** Day {{ day }} - {{ phase }} (EC {{ state_attr(sensor, 'recommended_ec') }})
+          {% endif %}
+          {% endfor %}
           
-          To regenerate tasks, use the **Settings** tab.
+          ---
+          
+          ### Core + Bloom (Stretch/Bulk - EC 3.0)
+          | Tank | Core | Bloom |
+          |------|------|-------|
+          | 20L | 16g | 16g |
+          | 50L | 40g | 40g |
+          | 100L | 79g | 79g |
+          | 200L | 158g | 158g |
+          
+          ### Fade (Finish - EC 1.5)
+          | Tank | Fade | Cleanse |
+          |------|------|---------|
+          | 20L | 16g | 5g |
+          | 50L | 40g | 13g |
+          | 100L | 79g | 26g |
+          | 200L | 158g | 52g |
+
+      - type: markdown
+        title: "🌱 Veg Feeding"
+        content: |
+          **Recommended EC:** {{ state_attr('sensor.veg_room_status', 'recommended_ec') or '1.0-2.2' }}
+          
+          ### Core + Grow (per gallon)
+          | Stage | Core | Grow | Balance | EC |
+          |-------|------|------|---------|-----|
+          | Clone | 1g | 1g | 0.5g | 0.8 |
+          | Pre-Veg | 1.5g | 1.5g | 0.5g | 1.2 |
+          | Early Veg | 2g | 2g | 1g | 1.8 |
+          | Late Veg | 2.5g | 2.5g | 1g | 2.2 |
+          | Mother | 2g | 2g | 1g | 2.0 |
+          
+          ### 100L Tank Recipes
+          | Stage | Core | Grow | Balance |
+          |-------|------|------|---------|
+          | Clone | 26g | 26g | 13g |
+          | Pre-Veg | 40g | 40g | 13g |
+          | Early Veg | 53g | 53g | 26g |
+          | Late Veg | 66g | 66g | 26g |
+          | Mother | 53g | 53g | 26g |
+
+      - type: markdown
+        title: "📋 Mixing Instructions"
+        content: |
+          1. Fill tank with RO/filtered water
+          2. Add **Core** first, stir well
+          3. Add **Bloom/Grow**, stir well
+          4. Add **Balance** (veg only)
+          5. Check EC - adjust if needed
+          6. Add **pH Down** to reach 5.8-6.2
+          7. Let mix 15 min before use
+          
+          ⚠️ **Never mix concentrates directly!**
 
   # ===========================================================================
   # SETTINGS
@@ -374,296 +832,107 @@ views:
         content: |
           # ⚙️ Settings
           
-          ## How to Configure Rooms
+          ## Add/Configure Rooms
+          Go to **Settings** → **Devices & Services** → **Grow Room Manager**
           
-          1. Go to **Settings** → **Devices & Services**
-          2. Find **Grow Room Manager**
-          3. Click **Configure** on any room to change:
-             - Start Date
-             - Calendar Entity
-             - Todo List Entity
-          
-          ---
+          - Click **Add Entry** to add a new room
+          - Click **Configure** on any room to change settings
 
-      # Room F1 Settings
-      - type: vertical-stack
-        title: "🏠 Room F1"
-        cards:
-          - type: markdown
-            content: |
-              {% set s = 'sensor.flower_room_1_grow_status' %}
-              **Status:** {{ states(s) }}
-              **Start Date:** {{ state_attr(s, 'start_date') or 'Not set' }}
-              **Phase:** {{ state_attr(s, 'phase') }}
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Set Start Today
-                icon: mdi:calendar-today
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.set_start_date
-                  service_data:
-                    room_id: f1
-                    start_date: "{{ now().strftime('%Y-%m-%d') }}"
-                  confirmation:
-                    text: Set F1 start date to today?
-              - type: button
-                name: Generate Tasks
-                icon: mdi:calendar-plus
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.generate_tasks
-                  service_data:
-                    room_id: f1
-                    start_date: "{{ state_attr('sensor.flower_room_1_grow_status', 'start_date') }}"
-                    calendar_entity: calendar.grow_calendar
-                    todo_entity: todo.f1_tasks
-                  confirmation:
-                    text: Generate 35 tasks for F1?
-
-      # Room F2 Settings
-      - type: vertical-stack
-        title: "🏠 Room F2"
-        cards:
-          - type: markdown
-            content: |
-              {% set s = 'sensor.flower_room_2_grow_status' %}
-              **Status:** {{ states(s) }}
-              **Start Date:** {{ state_attr(s, 'start_date') or 'Not set' }}
-              **Phase:** {{ state_attr(s, 'phase') }}
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Set Start Today
-                icon: mdi:calendar-today
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.set_start_date
-                  service_data:
-                    room_id: f2
-                    start_date: "{{ now().strftime('%Y-%m-%d') }}"
-                  confirmation:
-                    text: Set F2 start date to today?
-              - type: button
-                name: Generate Tasks
-                icon: mdi:calendar-plus
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.generate_tasks
-                  service_data:
-                    room_id: f2
-                    start_date: "{{ state_attr('sensor.flower_room_2_grow_status', 'start_date') }}"
-                    calendar_entity: calendar.grow_calendar
-                    todo_entity: todo.f2_tasks
-                  confirmation:
-                    text: Generate 35 tasks for F2?
-
-      # Room F3 Settings
-      - type: vertical-stack
-        title: "🏠 Room F3"
-        cards:
-          - type: markdown
-            content: |
-              {% set s = 'sensor.flower_room_3_grow_status' %}
-              **Status:** {{ states(s) }}
-              **Start Date:** {{ state_attr(s, 'start_date') or 'Not set' }}
-              **Phase:** {{ state_attr(s, 'phase') }}
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Set Start Today
-                icon: mdi:calendar-today
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.set_start_date
-                  service_data:
-                    room_id: f3
-                    start_date: "{{ now().strftime('%Y-%m-%d') }}"
-                  confirmation:
-                    text: Set F3 start date to today?
-              - type: button
-                name: Generate Tasks
-                icon: mdi:calendar-plus
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.generate_tasks
-                  service_data:
-                    room_id: f3
-                    start_date: "{{ state_attr('sensor.flower_room_3_grow_status', 'start_date') }}"
-                    calendar_entity: calendar.grow_calendar
-                    todo_entity: todo.f3_tasks
-                  confirmation:
-                    text: Generate 35 tasks for F3?
-
-      # Export
-      - type: vertical-stack
-        title: "📤 Export Journals"
-        cards:
-          - type: horizontal-stack
-            cards:
-              - type: button
-                name: Export F1 CSV
-                icon: mdi:file-export
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.export_journal
-                  service_data:
-                    room_id: f1
-                    format: csv
-              - type: button
-                name: Export F2 CSV
-                icon: mdi:file-export
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.export_journal
-                  service_data:
-                    room_id: f2
-                    format: csv
-              - type: button
-                name: Export F3 CSV
-                icon: mdi:file-export
-                tap_action:
-                  action: call-service
-                  service: grow_room_manager.export_journal
-                  service_data:
-                    room_id: f3
-                    format: csv
-
-  # ===========================================================================
-  # FEEDING CALCULATOR
-  # ===========================================================================
-  - title: Feeding
-    path: feeding
-    icon: mdi:beaker
-    cards:
       - type: markdown
-        content: |
-          # 🧪 Athena Feeding Calculator
-          
-          Select a room to see the current feeding recipe:
+        content: "### 🌸 Flower Room Settings"
 
-      # F1 Feeding
-      - type: vertical-stack
-        title: "🏠 F1 Feeding"
+      - type: horizontal-stack
         cards:
-          - type: markdown
-            content: |
-              {% set s = 'sensor.flower_room_1_grow_status' %}
-              {% set phase = state_attr(s, 'phase') %}
-              {% set ec = state_attr(s, 'recommended_ec') %}
-              {% set day = state_attr(s, 'current_day') %}
-              
-              {% if phase and phase != 'Not Started' %}
-              **Phase:** {{ phase }} | **Day {{ day }}** | **Target EC:** {{ ec }}
-              
-              {% if phase == 'Stretch' or phase == 'Bulk' %}
-              ### Core + Bloom Recipe (EC 3.0)
-              | Tank | Core | Bloom |
-              |------|------|-------|
-              | 20L | 16g | 16g |
-              | 50L | 40g | 40g |
-              | 100L | 79g | 79g |
-              | 200L | 158g | 158g |
-              {% else %}
-              ### Fade Recipe (EC 1.5)
-              | Tank | Fade | Cleanse |
-              |------|------|---------|
-              | 20L | 16g | 5g |
-              | 50L | 40g | 13g |
-              | 100L | 79g | 26g |
-              | 200L | 158g | 52g |
-              {% endif %}
-              {% else %}
-              ⏳ Set start date to see recipe
-              {% endif %}
+          - type: vertical-stack
+            cards:
+              - type: markdown
+                content: |
+                  **F1**
+                  {{ state_attr('sensor.flower_room_1_grow_status', 'start_date') or 'Not set' }}
+              - type: button
+                name: "Start Today"
+                icon: mdi:calendar-today
+                tap_action:
+                  action: call-service
+                  service: grow_room_manager.set_start_date
+                  data:
+                    room_id: f1
+                    start_date: "{{ now().strftime('%Y-%m-%d') }}"
+                  confirmation:
+                    text: Set F1 start to today?
+          - type: vertical-stack
+            cards:
+              - type: markdown
+                content: |
+                  **F2**
+                  {{ state_attr('sensor.flower_room_2_grow_status', 'start_date') or 'Not set' }}
+              - type: button
+                name: "Start Today"
+                icon: mdi:calendar-today
+                tap_action:
+                  action: call-service
+                  service: grow_room_manager.set_start_date
+                  data:
+                    room_id: f2
+                    start_date: "{{ now().strftime('%Y-%m-%d') }}"
+                  confirmation:
+                    text: Set F2 start to today?
+          - type: vertical-stack
+            cards:
+              - type: markdown
+                content: |
+                  **F3**
+                  {{ state_attr('sensor.flower_room_3_grow_status', 'start_date') or 'Not set' }}
+              - type: button
+                name: "Start Today"
+                icon: mdi:calendar-today
+                tap_action:
+                  action: call-service
+                  service: grow_room_manager.set_start_date
+                  data:
+                    room_id: f3
+                    start_date: "{{ now().strftime('%Y-%m-%d') }}"
+                  confirmation:
+                    text: Set F3 start to today?
 
-      # F2 Feeding
-      - type: vertical-stack
-        title: "🏠 F2 Feeding"
-        cards:
-          - type: markdown
-            content: |
-              {% set s = 'sensor.flower_room_2_grow_status' %}
-              {% set phase = state_attr(s, 'phase') %}
-              {% set ec = state_attr(s, 'recommended_ec') %}
-              {% set day = state_attr(s, 'current_day') %}
-              
-              {% if phase and phase != 'Not Started' %}
-              **Phase:** {{ phase }} | **Day {{ day }}** | **Target EC:** {{ ec }}
-              
-              {% if phase == 'Stretch' or phase == 'Bulk' %}
-              ### Core + Bloom Recipe (EC 3.0)
-              | Tank | Core | Bloom |
-              |------|------|-------|
-              | 20L | 16g | 16g |
-              | 50L | 40g | 40g |
-              | 100L | 79g | 79g |
-              | 200L | 158g | 158g |
-              {% else %}
-              ### Fade Recipe (EC 1.5)
-              | Tank | Fade | Cleanse |
-              |------|------|---------|
-              | 20L | 16g | 5g |
-              | 50L | 40g | 13g |
-              | 100L | 79g | 26g |
-              | 200L | 158g | 52g |
-              {% endif %}
-              {% else %}
-              ⏳ Set start date to see recipe
-              {% endif %}
-
-      # F3 Feeding
-      - type: vertical-stack
-        title: "🏠 F3 Feeding"
-        cards:
-          - type: markdown
-            content: |
-              {% set s = 'sensor.flower_room_3_grow_status' %}
-              {% set phase = state_attr(s, 'phase') %}
-              {% set ec = state_attr(s, 'recommended_ec') %}
-              {% set day = state_attr(s, 'current_day') %}
-              
-              {% if phase and phase != 'Not Started' %}
-              **Phase:** {{ phase }} | **Day {{ day }}** | **Target EC:** {{ ec }}
-              
-              {% if phase == 'Stretch' or phase == 'Bulk' %}
-              ### Core + Bloom Recipe (EC 3.0)
-              | Tank | Core | Bloom |
-              |------|------|-------|
-              | 20L | 16g | 16g |
-              | 50L | 40g | 40g |
-              | 100L | 79g | 79g |
-              | 200L | 158g | 158g |
-              {% else %}
-              ### Fade Recipe (EC 1.5)
-              | Tank | Fade | Cleanse |
-              |------|------|---------|
-              | 20L | 16g | 5g |
-              | 50L | 40g | 13g |
-              | 100L | 79g | 26g |
-              | 200L | 158g | 52g |
-              {% endif %}
-              {% else %}
-              ⏳ Set start date to see recipe
-              {% endif %}
-
-      # Mixing Instructions
       - type: markdown
-        title: "📋 Mixing Instructions"
-        content: |
-          1. Fill tank with RO/filtered water
-          2. Add **Core** first, stir well
-          3. Add **Bloom** (or Fade), stir well
-          4. Check EC - adjust if needed
-          5. Adjust pH to **5.8-6.0**
-          6. Let mix 15 min before use
-          
-          ---
-          
-          **⚠️ Never mix concentrates directly!**
-          
-          **💡 Tip:** Check source water EC first
+        content: "### 📅 Generate Tasks"
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "F1 Tasks"
+            icon: mdi:calendar-plus
+            tap_action:
+              action: call-service
+              service: grow_room_manager.generate_tasks
+              data:
+                room_id: f1
+                start_date: "{{ state_attr('sensor.flower_room_1_grow_status', 'start_date') }}"
+              confirmation:
+                text: Generate 35 tasks for F1?
+          - type: button
+            name: "F2 Tasks"
+            icon: mdi:calendar-plus
+            tap_action:
+              action: call-service
+              service: grow_room_manager.generate_tasks
+              data:
+                room_id: f2
+                start_date: "{{ state_attr('sensor.flower_room_2_grow_status', 'start_date') }}"
+              confirmation:
+                text: Generate 35 tasks for F2?
+          - type: button
+            name: "F3 Tasks"
+            icon: mdi:calendar-plus
+            tap_action:
+              action: call-service
+              service: grow_room_manager.generate_tasks
+              data:
+                room_id: f3
+                start_date: "{{ state_attr('sensor.flower_room_3_grow_status', 'start_date') }}"
+              confirmation:
+                text: Generate 35 tasks for F3?
 
   # ===========================================================================
   # GUIDE
@@ -677,64 +946,51 @@ views:
           # 📖 Athena Pro Line Guide
           
           ## Phase Overview
-          
           | Phase | Days | EC | Dryback | Key Actions |
           |-------|------|-----|---------|-------------|
           | **Stretch** | 1-21 | 3.0 | 20-25% | Defoliation, IPM |
           | **Bulk** | 22-55 | 3.0 | 30-40% | Maintenance q3d |
           | **Finish** | 56-84 | 1.5 | 40-50% | Fade, harvest |
           
-          ---
-          
           ## Critical Days
-          
           | Day | Action |
           |-----|--------|
           | 2 | Heavy defoliation (strip lower 1/3) |
           | 21 | Final defoliation + LAST IPM spray |
           | 42 | Major maintenance prune |
-          | 56 | Switch to Athena Fade (0 nitrogen) |
+          | 56 | Switch to Athena Fade |
           | 77-84 | Harvest window |
           
-          ---
-          
-          ## Environmental Targets
+          ## Environment Targets
           
           ### Stretch (Days 1-21)
-          - Day: 78-82°F (25-28°C)
-          - Night: 68-72°F (20-22°C)
-          - Humidity: 55-65%
-          - VPD: 1.0-1.2 kPa
+          - Day: 78-82°F | Night: 68-72°F
+          - Humidity: 55-65% | VPD: 1.0-1.2
           
           ### Bulk (Days 22-55)
-          - Day: 78-82°F (25-28°C)
-          - Night: 65-70°F (18-21°C)
-          - Humidity: 50-60%
-          - VPD: 1.2-1.4 kPa
+          - Day: 78-82°F | Night: 65-70°F
+          - Humidity: 50-60% | VPD: 1.2-1.4
           
           ### Finish (Days 56-84)
-          - Day: 75-78°F (24-26°C)
-          - Night: 62-68°F (17-20°C)
-          - Humidity: 40-50%
-          - VPD: 1.4-1.6 kPa
+          - Day: 75-78°F | Night: 62-68°F
+          - Humidity: 40-50% | VPD: 1.4-1.6
           
-          ---
-          
-          ## IPM Schedule (Days 1-21 only)
-          
-          Apply 2x per week: Days 3, 7, 10, 14, 17, 21
-          
+          ## IPM Schedule
+          Days 3, 7, 10, 14, 17, 21
           ⚠️ **NO SPRAYS AFTER DAY 21!**
+
+      - type: markdown
+        content: |
+          ## Veg Stages
+          | Stage | Days | EC | Notes |
+          |-------|------|-----|-------|
+          | Clone | ~14 | 0.8 | High humidity dome |
+          | Pre-Veg | ~7 | 1.2 | Post-transplant |
+          | Early Veg | ~14 | 1.8 | Training begins |
+          | Late Veg | ~14 | 2.2 | Ready for flower |
+          | Mother | Ongoing | 2.0 | Maintenance |
           
-          ---
-          
-          ## Nutrient Mix (per 100gal)
-          
-          **Stretch/Bulk (EC 3.0):**
-          - Athena Core: 300g
-          - Athena Bloom: 300g
-          - pH: 5.8-6.0
-          
-          **Finish (EC 1.5):**
-          - Athena Fade: per label
-          - pH: 5.8-6.0
+          ## Veg Environment
+          - Day: 75-82°F | Night: 68-75°F
+          - Humidity: 55-70% | VPD: 0.8-1.2
+          - pH: 5.8-6.2
