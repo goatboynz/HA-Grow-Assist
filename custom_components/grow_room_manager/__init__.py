@@ -45,6 +45,7 @@ from .const import (
     SERVICE_UPDATE_VEG_BATCH,
     SERVICE_MOVE_TO_FLOWER,
     SERVICE_LIST_VEG_BATCHES,
+    SERVICE_GET_JOURNAL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -247,6 +248,11 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         vol.Required("room_id"): cv.string,
         vol.Optional("active_only", default=True): cv.boolean,
     })
+    
+    service_get_journal_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+        vol.Optional("limit", default=50): cv.positive_int,
+    })
 
     async def handle_add_journal_entry(call: ServiceCall) -> None:
         """Handle the add_journal_entry service call."""
@@ -288,6 +294,10 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         """Handle the list_veg_batches service call."""
         await _list_veg_batches(hass, call.data)
 
+    async def handle_get_journal(call: ServiceCall) -> None:
+        """Handle the get_journal service call."""
+        await _get_journal(hass, call.data)
+
     hass.services.async_register(
         DOMAIN, SERVICE_ADD_JOURNAL, handle_add_journal_entry, schema=service_journal_schema
     )
@@ -317,6 +327,9 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     )
     hass.services.async_register(
         DOMAIN, SERVICE_LIST_VEG_BATCHES, handle_list_veg_batches, schema=service_list_veg_batches_schema
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_GET_JOURNAL, handle_get_journal, schema=service_get_journal_schema
     )
     
     _LOGGER.info("Grow Room Manager services registered")
@@ -479,6 +492,7 @@ async def _generate_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
         # Create todo item
         if todo_entity:
             try:
+                # Try with description first
                 await hass.services.async_call(
                     "todo",
                     "add_item",
@@ -492,7 +506,22 @@ async def _generate_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
                 )
                 _LOGGER.debug("Created todo item: %s", task_title)
             except Exception as err:
-                _LOGGER.error("Failed to create todo item: %s", err)
+                _LOGGER.debug("Todo with description failed, trying without: %s", err)
+                try:
+                    # Fall back to without description (some integrations don't support it)
+                    await hass.services.async_call(
+                        "todo",
+                        "add_item",
+                        {
+                            "entity_id": todo_entity,
+                            "item": task_title,
+                            "due_date": str(task_date),
+                        },
+                        blocking=True,
+                    )
+                    _LOGGER.debug("Created todo item (no description): %s", task_title)
+                except Exception as err2:
+                    _LOGGER.error("Failed to create todo item: %s", err2)
         
         tasks_created += 1
     
@@ -808,8 +837,21 @@ async def _generate_veg_batch_tasks(
                     },
                     blocking=True,
                 )
-            except Exception as err:
-                _LOGGER.warning("Failed to create todo item: %s", err)
+            except Exception:
+                try:
+                    # Fall back to without description
+                    await hass.services.async_call(
+                        "todo",
+                        "add_item",
+                        {
+                            "entity_id": todo_entity,
+                            "item": task_title,
+                            "due_date": str(task_date),
+                        },
+                        blocking=True,
+                    )
+                except Exception as err:
+                    _LOGGER.warning("Failed to create todo item: %s", err)
         
         tasks_created += 1
     
@@ -992,3 +1034,31 @@ async def _list_veg_batches(hass: HomeAssistant, data: dict[str, Any]) -> None:
     )
     
     _LOGGER.info("Listed %d batches for room %s", len(batches), room_id)
+
+
+async def _get_journal(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """Get journal entries and fire an event with the data."""
+    room_id = data["room_id"]
+    limit = data.get("limit", 50)
+    
+    config_path = hass.config.path()
+    journal_file = Path(config_path) / "grow_logs" / f"{room_id}.json"
+    
+    entries = await hass.async_add_executor_job(_load_journal, journal_file)
+    
+    # Get most recent entries up to limit
+    recent_entries = entries[-limit:] if len(entries) > limit else entries
+    recent_entries.reverse()  # Most recent first
+    
+    # Fire event with journal entries
+    hass.bus.async_fire(
+        f"{DOMAIN}_journal_entries",
+        {
+            "room_id": room_id,
+            "total_count": len(entries),
+            "returned_count": len(recent_entries),
+            "entries": recent_entries,
+        }
+    )
+    
+    _LOGGER.info("Retrieved %d journal entries for room %s", len(recent_entries), room_id)

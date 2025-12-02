@@ -58,6 +58,7 @@ SERVICE_ADD_VEG_BATCH: Final = "add_veg_batch"
 SERVICE_UPDATE_VEG_BATCH: Final = "update_veg_batch"
 SERVICE_MOVE_TO_FLOWER: Final = "move_to_flower"
 SERVICE_LIST_VEG_BATCHES: Final = "list_veg_batches"
+SERVICE_GET_JOURNAL: Final = "get_journal"
 
 # Veg EC targets by stage
 EC_CLONE: Final = 0.8

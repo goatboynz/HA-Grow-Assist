@@ -312,3 +312,26 @@ list_veg_batches:
       default: true
       selector:
         boolean:
+
+
+get_journal:
+  name: Get Journal Entries
+  description: Get journal entries for a room and fire a grow_room_manager_journal_entries event.
+  fields:
+    room_id:
+      name: Room ID
+      description: The ID of the room.
+      required: true
+      example: "f1"
+      selector:
+        text:
+    limit:
+      name: Limit
+      description: Maximum number of entries to return (default 50).
+      required: false
+      default: 50
+      selector:
+        number:
+          min: 1
+          max: 500
+          mode: box

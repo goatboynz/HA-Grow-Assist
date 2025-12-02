@@ -277,6 +277,20 @@
           "description": "Only show active batches"
         }
       }
+    },
+    "get_journal": {
+      "name": "Get Journal",
+      "description": "Get journal entries for a room.",
+      "fields": {
+        "room_id": {
+          "name": "Room ID",
+          "description": "The room ID"
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "Max entries to return"
+        }
+      }
     }
   }
 }

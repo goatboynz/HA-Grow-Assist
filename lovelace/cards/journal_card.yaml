@@ -1,35 +1,171 @@
 # =============================================================================
-# JOURNAL CARD
+# JOURNAL CARD - Enhanced
 # =============================================================================
-# Add journal entries and view entry count
+# Add journal entries with text input and view recent entries
 #
-# USAGE: Replace "f1" with your room_id
+# REQUIRED: Add these helpers to your configuration.yaml:
+#
+# input_text:
+#   grow_journal_note:
+#     name: Journal Note
+#     max: 500
+#
+# input_select:
+#   grow_journal_room:
+#     name: Room
+#     options:
+#       - f1
+#       - f2
+#       - f3
+#       - veg
+#
 # =============================================================================
 
 type: vertical-stack
 cards:
-  - type: entities
-    title: "📝 Journal"
-    entities:
-      - entity: sensor.flower_room_1_journal_entries
-        name: "Total Entries"
-      - type: attribute
-        entity: sensor.flower_room_1_journal_entries
-        attribute: last_entry_date
-        name: "Last Entry"
-        icon: mdi:calendar
+  - type: custom:mushroom-title-card
+    title: "📝 Grow Journal"
+    subtitle: "Record notes and observations"
 
+  # Room selector and entry count
+  - type: horizontal-stack
+    cards:
+      - type: entity
+        entity: input_select.grow_journal_room
+        name: "Room"
+      - type: entity
+        entity: sensor.flower_room_1_journal_entries
+        name: "F1 Entries"
+      - type: entity
+        entity: sensor.veg_room_journal_entries
+        name: "Veg Entries"
+
+  # Note input
+  - type: entities
+    entities:
+      - entity: input_text.grow_journal_note
+        name: "📝 Your Note"
+
+  # Add entry button
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "💾 Save Note"
+        icon: mdi:content-save
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: "{{ states('input_select.grow_journal_room') }}"
+            note: "{{ states('input_text.grow_journal_note') }}"
+      - type: button
+        name: "📷 Save with Photo"
+        icon: mdi:camera
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: "{{ states('input_select.grow_journal_room') }}"
+            note: "{{ states('input_text.grow_journal_note') }}"
+            image_entity: camera.grow_room  # Change to your camera entity
+
+  # Quick notes
+  - type: custom:mushroom-title-card
+    title: ""
+    subtitle: "⚡ Quick Notes"
+
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "✅ All Good"
+        icon: mdi:check-circle
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: "{{ states('input_select.grow_journal_room') }}"
+            note: "Quick check - all plants looking healthy"
+      - type: button
+        name: "💧 Watered"
+        icon: mdi:water
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: "{{ states('input_select.grow_journal_room') }}"
+            note: "Watered/fed plants"
+      - type: button
+        name: "🐛 IPM Done"
+        icon: mdi:bug
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: "{{ states('input_select.grow_journal_room') }}"
+            note: "IPM spray application completed"
+
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "✂️ Defoliated"
+        icon: mdi:content-cut
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: "{{ states('input_select.grow_journal_room') }}"
+            note: "Defoliation/pruning completed"
+      - type: button
+        name: "⚠️ Issue Found"
+        icon: mdi:alert
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: "{{ states('input_select.grow_journal_room') }}"
+            note: "Issue found - needs attention"
+      - type: button
+        name: "📊 EC/pH Check"
+        icon: mdi:test-tube
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: "{{ states('input_select.grow_journal_room') }}"
+            note: "EC/pH levels checked and adjusted"
+
+  # Recent entries display
   - type: markdown
     content: |
-      **Last Note:**
-      {{ state_attr('sensor.flower_room_1_journal_entries', 'last_entry_preview') or 'No entries yet' }}
+      ---
+      ### 📖 Recent Entry
+      
+      **Room:** {{ states('input_select.grow_journal_room') }}
+      
+      {% set room = states('input_select.grow_journal_room') %}
+      {% if room == 'f1' %}
+      {% set sensor = 'sensor.flower_room_1_journal_entries' %}
+      {% elif room == 'f2' %}
+      {% set sensor = 'sensor.flower_room_2_journal_entries' %}
+      {% elif room == 'f3' %}
+      {% set sensor = 'sensor.flower_room_3_journal_entries' %}
+      {% elif room == 'veg' %}
+      {% set sensor = 'sensor.veg_room_journal_entries' %}
+      {% else %}
+      {% set sensor = 'sensor.flower_room_1_journal_entries' %}
+      {% endif %}
+      
+      **Last Entry:** {{ state_attr(sensor, 'last_entry_date') or 'None' }}
+      
+      {{ state_attr(sensor, 'last_entry_preview') or 'No entries yet' }}
 
+  # Export button
   - type: button
-    name: "Add Quick Note"
-    icon: mdi:notebook-plus
+    name: "📤 Export Journal"
+    icon: mdi:export
     tap_action:
       action: call-service
-      service: grow_room_manager.add_journal_entry
-      service_data:
-        room_id: "f1"
-        note: "Quick check - all good"
+      service: grow_room_manager.export_journal
+      data:
+        room_id: "{{ states('input_select.grow_journal_room') }}"
+        format: csv
