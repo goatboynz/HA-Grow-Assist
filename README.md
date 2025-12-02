@@ -1,243 +1,167 @@
-# Grow Room Manager for Home Assistant
+<p align="center">
+  <img src="https://raw.githubusercontent.com/goatboynz/HA-Grow-Assist/main/images/logo.svg" alt="Grow Room Manager Logo" width="400">
+</p>
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/goatboynz/HA-Grow-Assist.svg)](https://github.com/goatboynz/HA-Grow-Assist/releases)
-[![License](https://img.shields.io/github/license/goatboynz/HA-Grow-Assist.svg)](LICENSE)
+<h1 align="center">Grow Room Manager</h1>
 
-A HACS-compatible custom integration for managing medical cannabis flowering rooms using the **Athena Pro Line** cultivation methodology.
+<p align="center">
+  <strong>Home Assistant integration for managing cannabis flowering rooms using the Athena Pro Line methodology</strong>
+</p>
 
-## Features
+<p align="center">
+  <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg" alt="HACS"></a>
+  <a href="https://github.com/goatboynz/HA-Grow-Assist/releases"><img src="https://img.shields.io/github/release/goatboynz/HA-Grow-Assist.svg" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/goatboynz/HA-Grow-Assist.svg" alt="License"></a>
+</p>
 
-- **Multi-Room Support**: Manage multiple flowering rooms (F1, F2, F3, etc.)
-- **Grow Journaling**: Save notes and camera snapshots with timestamps
-- **Automated Crop Steering**: Auto-generate 35 tasks based on the Athena Pro Line 84-day schedule
-- **Calendar & Todo Integration**: Tasks appear in your Home Assistant calendar and todo lists
-- **Multiple Sensors per Room**:
-  - Status sensor (current day, phase, EC, dryback targets)
-  - Progress sensor (percentage through cycle)
-  - Next task sensor (upcoming scheduled task)
-  - Journal count sensor (entry count with last note preview)
-- **Automation Blueprints**: Ready-to-use blueprints for notifications
-- **Journal Export**: Export grow logs to CSV or JSON
+---
 
-## Installation
+## ✨ Features
 
-### HACS (Recommended)
+- 🏠 **Multi-Room Support** - Manage F1, F2, F3+ flowering rooms
+- 📅 **Auto Task Generation** - 35 tasks automatically created when you add a room
+- 📊 **Smart Sensors** - Track day, phase, EC, dryback, environmental targets
+- 📝 **Grow Journaling** - Save notes and camera snapshots
+- 🔔 **Automation Blueprints** - Ready-to-use notifications
+- 📤 **Export Logs** - Export journal to CSV or JSON
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=goatboynz&repository=HA-Grow-Assist&category=integration)
+## 🚀 Quick Start
 
-**Or manually:**
+### 1. Install via HACS
 
-1. Open HACS in Home Assistant
-2. Click the three dots menu → **Custom repositories**
-3. Add: `https://github.com/goatboynz/HA-Grow-Assist`
-4. Select category: **Integration**
-5. Click **Add**
-6. Search for "Grow Room Manager" and click **Download**
-7. Restart Home Assistant
+[![Open HACS Repository](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=goatboynz&repository=HA-Grow-Assist&category=integration)
 
-### Manual Installation
+Or manually: HACS → Custom repositories → Add `https://github.com/goatboynz/HA-Grow-Assist`
 
-1. Download the latest release from [GitHub Releases](https://github.com/goatboynz/HA-Grow-Assist/releases)
-2. Extract and copy the `custom_components/HA-Grow-Assist` folder to your Home Assistant `config/custom_components/` directory
-3. Restart Home Assistant
+### 2. Add a Room
 
-## Configuration
+1. **Settings** → **Devices & Services** → **Add Integration**
+2. Search for **"Grow Room Manager"**
+3. Enter:
+   - Room ID (e.g., `f1`)
+   - Room Name (e.g., `Flower Room 1`)
+   - Start Date (Day 1 of flower)
+   - Calendar entity (optional)
+   - Todo list entity (optional)
+4. Click **Submit** → Tasks auto-generate!
 
-Add the following to your `configuration.yaml`:
+### 3. Add Dashboard Cards
 
-```yaml
-HA-Grow-Assist:
-  rooms:
-    - room_id: f1
-      name: "Flower Room 1"
-      calendar_entity: calendar.grow_calendar
-      todo_entity: todo.grow_tasks_f1
-    - room_id: f2
-      name: "Flower Room 2"
-      calendar_entity: calendar.grow_calendar
-      todo_entity: todo.grow_tasks_f2
-    - room_id: f3
-      name: "Flower Room 3"
-      calendar_entity: calendar.grow_calendar
-      todo_entity: todo.grow_tasks_f3
+Copy cards from `lovelace/cards/` or use the full dashboard from `lovelace/grow_room_dashboard.yaml`
 
-# Required helpers for each room
-input_datetime:
-  f1_start_date:
-    name: "F1 Start Date"
-    has_date: true
-    has_time: false
-  f2_start_date:
-    name: "F2 Start Date"
-    has_date: true
-    has_time: false
-  f3_start_date:
-    name: "F3 Start Date"
-    has_date: true
-    has_time: false
+**That's it! No configuration.yaml changes needed.**
 
-input_text:
-  f1_journal_note:
-    name: "F1 Journal Note"
-    max: 255
-  f2_journal_note:
-    name: "F2 Journal Note"
-    max: 255
-  f3_journal_note:
-    name: "F3 Journal Note"
-    max: 255
-```
+---
 
-## Services
-
-### `HA-Grow-Assist.add_journal_entry`
-
-Add a journal entry with optional camera snapshot.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `room_id` | Yes | Room identifier (e.g., "f1") |
-| `note` | Yes | Journal note text |
-| `image_entity` | No | Camera entity for snapshot |
-
-### `HA-Grow-Assist.generate_tasks`
-
-Generate calendar events and todo items from the Athena schedule.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `room_id` | Yes | Room identifier |
-| `start_date` | Yes | First day of flower (YYYY-MM-DD) |
-
-### `HA-Grow-Assist.clear_tasks`
-
-Clear generated tasks for a room.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `room_id` | Yes | Room identifier |
-
-### `HA-Grow-Assist.set_start_date`
-
-Programmatically set the start date for a room.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `room_id` | Yes | Room identifier |
-| `start_date` | Yes | First day of flower (YYYY-MM-DD) |
-
-### `HA-Grow-Assist.export_journal`
-
-Export journal entries to CSV or JSON file.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `room_id` | Yes | Room identifier |
-| `format` | No | Export format: "csv" (default) or "json" |
-
-### `HA-Grow-Assist.get_today_tasks`
-
-Check for tasks scheduled for today and fire a `HA-Grow-Assist_task_today` event.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `room_id` | Yes | Room identifier |
-
-## Athena Pro Line Schedule
-
-The integration implements a comprehensive 84-day schedule with detailed task information:
-
-### Phase 1: Stretch (Weeks 1-3, Days 1-21)
-- **Day 1**: Flip day - begin 12/12 light cycle, set EC to 3.0
-- **Day 2**: Heavy defoliation/strip (lollipop lower 1/3)
-- **Days 3-21**: IPW spray applications (2x/week, 6 total)
-- **Day 21**: Final defoliation (skirt up), STOP all IPW sprays
-
-### Phase 2: Bulk (Weeks 4-8, Days 22-55)
-- **Day 22**: Begin vegetative steering (30-40% dryback)
-- **Every 3 days**: Maintenance checks for airflow & canopy management
-- **Day 42**: Major defoliation day - ensure airflow through canopy
-- Recurring tasks: Days 25, 28, 31, 34, 37, 40, 42, 43, 46, 49, 52, 55
-
-### Phase 3: Finish (Weeks 8-12, Days 56-84)
-- **Day 56**: Switch to Athena Fade (zero nitrogen), reduce EC to 1.5
-- **Every 3 days**: Maintenance checks, trichome monitoring
-- **Day 77**: Harvest window opens
-- **Day 84**: End of cycle - harvest & sanitize lines with Athena Renew/Reset
-
-Each task includes:
-- Detailed action checklists
-- Environmental targets (temp, humidity, VPD)
-- Nutrient recommendations
-- Expected plant status
-- Source references to Athena Handbook
-
-## Sensors
+## 📊 Sensors Created
 
 Each room creates 4 sensors:
 
-### Status Sensor (`sensor.{room_name}_grow_status`)
-- **State**: Current day (e.g., "Day 45")
-- **Attributes**:
-  - `phase`: Current phase (Stretch/Bulk/Finish)
-  - `current_week`: Week number of flower
-  - `recommended_ec`: Target EC for current phase
-  - `target_dryback`: Dryback percentage target
-  - `days_remaining`: Days until harvest window
-  - `harvest_window`: Boolean if in harvest window
-  - `target_temp_day`, `target_temp_night`: Temperature targets
-  - `target_humidity`, `target_vpd`: Environmental targets
+| Sensor | Description |
+|--------|-------------|
+| `sensor.{room}_grow_status` | Current day, phase, EC, dryback, environmental targets |
+| `sensor.{room}_grow_progress` | Percentage through 84-day cycle |
+| `sensor.{room}_next_task` | Next scheduled task with days until |
+| `sensor.{room}_journal_entries` | Journal entry count |
 
-### Progress Sensor (`sensor.{room_name}_grow_progress`)
-- **State**: Percentage through 84-day cycle
-- **Attributes**: `estimated_harvest` date
+---
 
-### Next Task Sensor (`sensor.{room_name}_next_task`)
-- **State**: Title of next scheduled task
-- **Attributes**: `task_day`, `task_date`, `days_until`, `priority`
+## 🛠️ Services
 
-### Journal Count Sensor (`sensor.{room_name}_journal_entries`)
-- **State**: Number of journal entries
-- **Attributes**: `last_entry_preview`, `last_entry_date`
+| Service | Description |
+|---------|-------------|
+| `grow_room_manager.generate_tasks` | Generate 35 calendar/todo tasks |
+| `grow_room_manager.add_journal_entry` | Add note with optional photo |
+| `grow_room_manager.set_start_date` | Update room start date |
+| `grow_room_manager.export_journal` | Export to CSV or JSON |
+| `grow_room_manager.get_today_tasks` | Fire event for today's tasks |
 
-## Automation Blueprints
+---
 
-Copy the `blueprints/` folder to your Home Assistant config to use these automations:
+## 📅 Athena Pro Line Schedule
 
-- **Daily Task Notification**: Get notified each morning about scheduled tasks
-- **Phase Change Notification**: Alert when transitioning between phases
-- **Harvest Window Alert**: Notification when harvest window opens (Day 77)
+### Phase Overview
 
-## File Storage
+| Phase | Days | EC | Dryback | Key Actions |
+|-------|------|-----|---------|-------------|
+| **Stretch** | 1-21 | 3.0 | 20-25% | Defoliation Day 2, IPM sprays |
+| **Bulk** | 22-55 | 3.0 | 30-40% | Maintenance every 3 days |
+| **Finish** | 56-84 | 1.5 | 40-50% | Fade nutrients, harvest prep |
 
-- **Journal entries**: `/config/grow_logs/{room_id}.json`
-- **Snapshots**: `/config/www/grow_logs/{room_id}/{timestamp}.jpg`
-- **Snapshot URLs**: `/local/grow_logs/{room_id}/{timestamp}.jpg`
+### Critical Days
 
-## Troubleshooting
+- **Day 2**: Heavy defoliation (strip lower 1/3)
+- **Day 21**: Final defoliation + LAST IPM spray
+- **Day 42**: Major maintenance prune
+- **Day 56**: Switch to Athena Fade (zero nitrogen)
+- **Day 77-84**: Harvest window
 
-Enable debug logging to diagnose issues:
+### Environmental Targets
+
+| Phase | Day Temp | Night Temp | Humidity | VPD |
+|-------|----------|------------|----------|-----|
+| Stretch | 78-82°F | 68-72°F | 55-65% | 1.0-1.2 |
+| Bulk | 78-82°F | 65-70°F | 50-60% | 1.2-1.4 |
+| Finish | 75-78°F | 62-68°F | 40-50% | 1.4-1.6 |
+
+---
+
+## 🎨 Dashboard Cards
+
+Pre-built cards available in `lovelace/cards/`:
+
+- `room_status_card.yaml` - Full room status display
+- `all_rooms_overview.yaml` - All rooms at a glance
+- `environmental_targets_card.yaml` - Temp, humidity, VPD targets
+- `next_task_card.yaml` - Upcoming task details
+- `journal_card.yaml` - Journal entries and quick add
+- `generate_tasks_card.yaml` - Task generation buttons
+
+---
+
+## 🔔 Automation Blueprints
+
+Copy `blueprints/` folder to your config for:
+
+- **Daily Task Notification** - Morning alerts for scheduled tasks
+- **Phase Change Notification** - Alert on phase transitions
+- **Harvest Window Alert** - Notification when harvest window opens
+
+---
+
+## 📁 File Storage
+
+| Type | Location |
+|------|----------|
+| Journal entries | `/config/grow_logs/{room_id}.json` |
+| Snapshots | `/config/www/grow_logs/{room_id}/` |
+| Exports | `/config/www/grow_logs/` |
+
+---
+
+## 🐛 Troubleshooting
+
+Enable debug logging:
 
 ```yaml
 logger:
   default: info
   logs:
-    custom_components.HA-Grow-Assist: debug
+    custom_components.grow_room_manager: debug
 ```
-
-## Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## License
-
-MIT License - See [LICENSE](LICENSE) file for details.
-
-## Credits
-
-Based on the Athena Pro Line cultivation methodology.
 
 ---
 
-**Note:** Replace `goatboynz` in this README with your actual GitHub username after creating the repository.
+## 📜 License
+
+MIT License - See [LICENSE](LICENSE)
+
+## 🙏 Credits
+
+Based on the **Athena Pro Line** cultivation methodology.
+
+---
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/goatboynz/HA-Grow-Assist/main/images/icon.svg" alt="Icon" width="64">
+</p>

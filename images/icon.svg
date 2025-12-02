@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#2E7D32" stroke="#1B5E20" stroke-width="2"/>
+  
+  <!-- Cannabis leaf simplified -->
+  <g fill="#81C784" transform="translate(50,50)">
+    <!-- Center leaf -->
+    <ellipse cx="0" cy="-15" rx="4" ry="20"/>
+    <!-- Left leaves -->
+    <ellipse cx="-12" cy="-8" rx="3" ry="15" transform="rotate(-30)"/>
+    <ellipse cx="-20" cy="0" rx="3" ry="12" transform="rotate(-50)"/>
+    <!-- Right leaves -->
+    <ellipse cx="12" cy="-8" rx="3" ry="15" transform="rotate(30)"/>
+    <ellipse cx="20" cy="0" rx="3" ry="12" transform="rotate(50)"/>
+  </g>
+  
+  <!-- Stem -->
+  <rect x="48" y="50" width="4" height="25" fill="#5D4037" rx="1"/>
+  
+  <!-- Day counter circle -->
+  <circle cx="75" cy="75" r="18" fill="#FFC107" stroke="#FF8F00" stroke-width="2"/>
+  <text x="75" y="80" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#333">84</text>
+</svg>
