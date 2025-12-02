@@ -5,7 +5,7 @@
 <h1 align="center">Grow Room Manager</h1>
 
 <p align="center">
-  <strong>Home Assistant integration for managing cannabis flowering rooms using the Athena Pro Line methodology</strong>
+  <strong>Home Assistant integration for managing cannabis grow rooms using the Athena Pro Line methodology</strong>
 </p>
 
 <p align="center">
@@ -18,12 +18,14 @@
 
 ## ✨ Features
 
-- 🏠 **Multi-Room Support** - Manage F1, F2, F3+ flowering rooms
-- 📅 **Auto Task Generation** - 35 tasks automatically created when you add a room
+- 🌸 **Flower Rooms** - 84-day cycle with 35 automated tasks
+- 🌱 **Veg Rooms** - Track multiple batches (clones, mothers, veg plants)
+- 📅 **Auto Task Generation** - Calendar/todo tasks created automatically
 - 📊 **Smart Sensors** - Track day, phase, EC, dryback, environmental targets
 - 📝 **Grow Journaling** - Save notes and camera snapshots
 - 🔔 **Automation Blueprints** - Ready-to-use notifications
 - 📤 **Export Logs** - Export journal to CSV or JSON
+- 🧪 **Athena Feeding Calculator** - Nutrient recipes for all phases
 
 ## 🚀 Quick Start
 
@@ -37,25 +39,21 @@ Or manually: HACS → Custom repositories → Add `https://github.com/goatboynz/
 
 1. **Settings** → **Devices & Services** → **Add Integration**
 2. Search for **"Grow Room Manager"**
-3. Enter:
-   - Room ID (e.g., `f1`)
-   - Room Name (e.g., `Flower Room 1`)
-   - Start Date (Day 1 of flower)
-   - Calendar entity (optional)
-   - Todo list entity (optional)
-4. Click **Submit** → Tasks auto-generate!
-
-### 3. Add Dashboard Cards
-
-Copy cards from `lovelace/cards/` or use the full dashboard from `lovelace/grow_room_dashboard.yaml`
+3. Choose room type:
+   - **Flower Room** - 84-day cycle with fixed start date
+   - **Veg Room** - Continuous operation with batch tracking
+4. Configure room settings
+5. Click **Submit** → Tasks auto-generate!
 
 **That's it! No configuration.yaml changes needed.**
 
 ---
 
-## 📊 Sensors Created
+## 🌸 Flower Rooms
 
-Each room creates 4 sensors:
+Flower rooms track a single 84-day cycle from flip to harvest.
+
+### Sensors Created
 
 | Sensor | Description |
 |--------|-------------|
@@ -64,23 +62,7 @@ Each room creates 4 sensors:
 | `sensor.{room}_next_task` | Next scheduled task with days until |
 | `sensor.{room}_journal_entries` | Journal entry count |
 
----
-
-## 🛠️ Services
-
-| Service | Description |
-|---------|-------------|
-| `grow_room_manager.generate_tasks` | Generate 35 calendar/todo tasks |
-| `grow_room_manager.add_journal_entry` | Add note with optional photo |
-| `grow_room_manager.set_start_date` | Update room start date |
-| `grow_room_manager.export_journal` | Export to CSV or JSON |
-| `grow_room_manager.get_today_tasks` | Fire event for today's tasks |
-
----
-
-## 📅 Athena Pro Line Schedule
-
-### Phase Overview
+### Athena Pro Line Schedule
 
 | Phase | Days | EC | Dryback | Key Actions |
 |-------|------|-----|---------|-------------|
@@ -106,6 +88,116 @@ Each room creates 4 sensors:
 
 ---
 
+## 🌱 Veg Rooms
+
+Veg rooms track multiple plant batches at different stages simultaneously.
+
+### Veg Stages
+
+| Stage | Duration | EC | Description |
+|-------|----------|-----|-------------|
+| **Clone** | ~14 days | 0.8 | Rooting in dome, high humidity |
+| **Pre-Veg** | ~7 days | 1.2 | Post-transplant establishment |
+| **Early Veg** | ~14 days | 1.8 | Rapid growth, training begins |
+| **Late Veg** | ~14 days | 2.2 | Final growth, ready for flower |
+| **Mother** | Ongoing | 2.0 | Maintained for cuttings |
+
+### Sensors Created
+
+| Sensor | Description |
+|--------|-------------|
+| `sensor.{room}_status` | Batch count, plants by stage, recommended EC |
+| `sensor.{room}_active_batches` | Count and details of active batches |
+| `sensor.{room}_next_task` | Next task across all batches |
+| `sensor.{room}_journal_entries` | Journal entry count |
+
+### Batch Workflow
+
+1. **Add Batch**: Call `grow_room_manager.add_veg_batch` when clones arrive
+2. **Update Stage**: Call `grow_room_manager.update_veg_batch` as plants progress
+3. **Move to Flower**: Call `grow_room_manager.move_to_flower` when ready
+
+### Example: Adding Clones
+
+```yaml
+service: grow_room_manager.add_veg_batch
+data:
+  room_id: veg
+  batch_name: "OG Kush Dec 2024"
+  start_date: "2024-12-01"
+  stage: Clone
+  plant_count: 24
+  strain: "OG Kush"
+  destination_room: f1
+  notes: "Clones from mother #3"
+```
+
+### Example: Moving to Flower
+
+```yaml
+service: grow_room_manager.move_to_flower
+data:
+  room_id: veg
+  batch_id: og_kush_dec_2024_20241201_120000
+  flower_room_id: f1
+  flower_start_date: "2024-12-15"
+```
+
+---
+
+## 🧪 Athena Feeding Chart
+
+### Flower Nutrients (per gallon)
+
+| Phase | Core | Bloom | Fade | Cleanse | Target EC |
+|-------|------|-------|------|---------|-----------|
+| Stretch | 3g | 3g | - | - | 3.0 |
+| Bulk | 3g | 3g | - | Optional | 3.0 |
+| Finish | - | - | 3g | Optional | 1.5 |
+
+### Veg Nutrients (per gallon)
+
+| Stage | Core | Grow | Balance | pH Down | Target EC |
+|-------|------|------|---------|---------|-----------|
+| Clone | 1g | 1g | 0.5g | As needed | 0.8 |
+| Pre-Veg | 1.5g | 1.5g | 0.5g | As needed | 1.2 |
+| Early Veg | 2g | 2g | 1g | As needed | 1.8 |
+| Late Veg | 2.5g | 2.5g | 1g | As needed | 2.2 |
+| Mother | 2g | 2g | 1g | As needed | 2.0 |
+
+**Note**: pH Down is used as needed to achieve target pH of 5.8-6.2. Balance provides additional calcium. Cleanse can be used weekly for salt buildup.
+
+---
+
+## 🛠️ Services
+
+### Flower Room Services
+
+| Service | Description |
+|---------|-------------|
+| `grow_room_manager.generate_tasks` | Generate 35 calendar/todo tasks |
+| `grow_room_manager.set_start_date` | Update room start date |
+| `grow_room_manager.get_today_tasks` | Fire event for today's tasks |
+
+### Veg Room Services
+
+| Service | Description |
+|---------|-------------|
+| `grow_room_manager.add_veg_batch` | Add a new batch of plants |
+| `grow_room_manager.update_veg_batch` | Update batch stage/details |
+| `grow_room_manager.move_to_flower` | Move batch to flower room |
+| `grow_room_manager.list_veg_batches` | List all batches |
+
+### Common Services
+
+| Service | Description |
+|---------|-------------|
+| `grow_room_manager.add_journal_entry` | Add note with optional photo |
+| `grow_room_manager.export_journal` | Export to CSV or JSON |
+| `grow_room_manager.clear_tasks` | Clear tasks (manual) |
+
+---
+
 ## 🎨 Dashboard Cards
 
 Pre-built cards available in `lovelace/cards/`:
@@ -116,6 +208,7 @@ Pre-built cards available in `lovelace/cards/`:
 - `next_task_card.yaml` - Upcoming task details
 - `journal_card.yaml` - Journal entries and quick add
 - `generate_tasks_card.yaml` - Task generation buttons
+- `feeding_calculator_card.yaml` - Athena nutrient calculator
 
 ---
 
@@ -134,8 +227,23 @@ Copy `blueprints/` folder to your config for:
 | Type | Location |
 |------|----------|
 | Journal entries | `/config/grow_logs/{room_id}.json` |
+| Veg batches | `/config/grow_logs/{room_id}_batches.json` |
 | Snapshots | `/config/www/grow_logs/{room_id}/` |
 | Exports | `/config/www/grow_logs/` |
+
+---
+
+## 🔄 Events
+
+The integration fires events for automations:
+
+| Event | Description |
+|-------|-------------|
+| `grow_room_manager_task_today` | Task scheduled for today |
+| `grow_room_manager_veg_batch_added` | New batch added |
+| `grow_room_manager_veg_stage_changed` | Batch stage updated |
+| `grow_room_manager_batch_moved_to_flower` | Batch moved to flower |
+| `grow_room_manager_veg_batches_list` | Batch list response |
 
 ---
 

@@ -23,13 +23,28 @@ from .const import (
     CONF_CALENDAR_ENTITY,
     CONF_TODO_ENTITY,
     CONF_START_DATE,
+    CONF_ROOM_TYPE,
+    CONF_DESTINATION_ROOM,
+    ROOM_TYPE_FLOWER,
+    ROOM_TYPE_VEG,
     ATHENA_SCHEDULE,
+    VEG_SCHEDULE,
+    PHASE_CLONE,
+    PHASE_PREVEG,
+    PHASE_EARLY_VEG,
+    PHASE_LATE_VEG,
+    PHASE_MOTHER,
+    VEG_STAGE_DURATIONS,
     SERVICE_ADD_JOURNAL,
     SERVICE_GENERATE_TASKS,
     SERVICE_CLEAR_TASKS,
     SERVICE_EXPORT_JOURNAL,
     SERVICE_SET_START_DATE,
     SERVICE_GET_TODAY_TASKS,
+    SERVICE_ADD_VEG_BATCH,
+    SERVICE_UPDATE_VEG_BATCH,
+    SERVICE_MOVE_TO_FLOWER,
+    SERVICE_LIST_VEG_BATCHES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,7 +56,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Grow Room Manager integration."""
-    hass.data.setdefault(DOMAIN, {"rooms": {}})
+    hass.data.setdefault(DOMAIN, {"rooms": {}, "veg_batches": {}})
     
     # Register services immediately so they're available even without config entries
     await _async_register_services(hass)
@@ -51,14 +66,19 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Grow Room Manager from a config entry."""
-    hass.data.setdefault(DOMAIN, {"rooms": {}})
+    hass.data.setdefault(DOMAIN, {"rooms": {}, "veg_batches": {}})
     
     # Store room config from entry
     room_id = entry.data[CONF_ROOM_ID]
+    room_type = entry.data.get(CONF_ROOM_TYPE, ROOM_TYPE_FLOWER)
     hass.data[DOMAIN]["rooms"][room_id] = dict(entry.data)
 
     # Ensure directories exist
     await hass.async_add_executor_job(_ensure_directories, hass, room_id)
+    
+    # Load veg batches for veg rooms
+    if room_type == ROOM_TYPE_VEG:
+        await hass.async_add_executor_job(_load_veg_batches, hass, room_id)
     
     # Register services (only once)
     await _async_register_services(hass)
@@ -66,30 +86,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     
-    # Auto-generate tasks if start_date and calendar/todo are configured
-    start_date = entry.data.get(CONF_START_DATE)
-    calendar_entity = entry.data.get(CONF_CALENDAR_ENTITY)
-    todo_entity = entry.data.get(CONF_TODO_ENTITY)
-    
-    if start_date and (calendar_entity or todo_entity):
-        # Schedule task generation after a short delay to ensure entities are ready
-        async def delayed_task_generation():
-            import asyncio
-            await asyncio.sleep(5)  # Wait for calendar/todo entities to be ready
-            try:
-                await _generate_tasks(hass, {
-                    "room_id": room_id,
-                    "start_date": start_date,
-                    "calendar_entity": calendar_entity,
-                    "todo_entity": todo_entity,
-                })
-                _LOGGER.info("Auto-generated tasks for room %s", room_id)
-            except Exception as err:
-                _LOGGER.warning("Could not auto-generate tasks for %s: %s", room_id, err)
+    # Auto-generate tasks only for flower rooms with start_date
+    if room_type == ROOM_TYPE_FLOWER:
+        start_date = entry.data.get(CONF_START_DATE)
+        calendar_entity = entry.data.get(CONF_CALENDAR_ENTITY)
+        todo_entity = entry.data.get(CONF_TODO_ENTITY)
         
-        hass.async_create_task(delayed_task_generation())
+        if start_date and (calendar_entity or todo_entity):
+            async def delayed_task_generation():
+                import asyncio
+                await asyncio.sleep(5)
+                try:
+                    await _generate_tasks(hass, {
+                        "room_id": room_id,
+                        "start_date": start_date,
+                        "calendar_entity": calendar_entity,
+                        "todo_entity": todo_entity,
+                    })
+                    _LOGGER.info("Auto-generated tasks for room %s", room_id)
+                except Exception as err:
+                    _LOGGER.warning("Could not auto-generate tasks for %s: %s", room_id, err)
+            
+            hass.async_create_task(delayed_task_generation())
     
-    _LOGGER.info("Grow Room Manager: Room '%s' loaded", room_id)
+    _LOGGER.info("Grow Room Manager: Room '%s' (%s) loaded", room_id, room_type)
     return True
 
 
@@ -124,6 +144,35 @@ def _ensure_directories(hass: HomeAssistant, room_id: str) -> None:
     room_logs.mkdir(parents=True, exist_ok=True)
     room_www = www_logs_path / room_id
     room_www.mkdir(parents=True, exist_ok=True)
+
+
+def _load_veg_batches(hass: HomeAssistant, room_id: str) -> None:
+    """Load veg batches from file."""
+    config_path = hass.config.path()
+    batches_file = Path(config_path) / "grow_logs" / f"{room_id}_batches.json"
+    
+    if batches_file.exists():
+        try:
+            with open(batches_file, "r") as f:
+                batches = json.load(f)
+                hass.data[DOMAIN]["veg_batches"][room_id] = batches
+                _LOGGER.info("Loaded %d veg batches for %s", len(batches), room_id)
+        except (json.JSONDecodeError, IOError) as err:
+            _LOGGER.error("Error loading veg batches: %s", err)
+            hass.data[DOMAIN]["veg_batches"][room_id] = []
+    else:
+        hass.data[DOMAIN]["veg_batches"][room_id] = []
+
+
+def _save_veg_batches(hass: HomeAssistant, room_id: str) -> None:
+    """Save veg batches to file."""
+    config_path = hass.config.path()
+    batches_file = Path(config_path) / "grow_logs" / f"{room_id}_batches.json"
+    batches = hass.data[DOMAIN]["veg_batches"].get(room_id, [])
+    
+    batches_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(batches_file, "w") as f:
+        json.dump(batches, f, indent=2)
 
 
 async def _async_register_services(hass: HomeAssistant) -> None:
@@ -164,6 +213,40 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     service_today_tasks_schema = vol.Schema({
         vol.Required("room_id"): cv.string,
     })
+    
+    # Veg batch service schemas
+    service_add_veg_batch_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+        vol.Required("batch_name"): cv.string,
+        vol.Required("start_date"): cv.date,
+        vol.Required("stage"): vol.In([PHASE_CLONE, PHASE_PREVEG, PHASE_EARLY_VEG, PHASE_LATE_VEG, PHASE_MOTHER]),
+        vol.Optional("plant_count"): cv.positive_int,
+        vol.Optional("strain"): cv.string,
+        vol.Optional("destination_room"): cv.string,
+        vol.Optional("notes"): cv.string,
+    })
+    
+    service_update_veg_batch_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+        vol.Required("batch_id"): cv.string,
+        vol.Optional("stage"): vol.In([PHASE_CLONE, PHASE_PREVEG, PHASE_EARLY_VEG, PHASE_LATE_VEG, PHASE_MOTHER]),
+        vol.Optional("plant_count"): cv.positive_int,
+        vol.Optional("destination_room"): cv.string,
+        vol.Optional("notes"): cv.string,
+        vol.Optional("active"): cv.boolean,
+    })
+    
+    service_move_to_flower_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+        vol.Required("batch_id"): cv.string,
+        vol.Required("flower_room_id"): cv.string,
+        vol.Optional("flower_start_date"): cv.date,
+    })
+    
+    service_list_veg_batches_schema = vol.Schema({
+        vol.Required("room_id"): cv.string,
+        vol.Optional("active_only", default=True): cv.boolean,
+    })
 
     async def handle_add_journal_entry(call: ServiceCall) -> None:
         """Handle the add_journal_entry service call."""
@@ -189,6 +272,22 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         """Handle the get_today_tasks service call."""
         await _get_today_tasks(hass, call.data)
 
+    async def handle_add_veg_batch(call: ServiceCall) -> None:
+        """Handle the add_veg_batch service call."""
+        await _add_veg_batch(hass, call.data)
+
+    async def handle_update_veg_batch(call: ServiceCall) -> None:
+        """Handle the update_veg_batch service call."""
+        await _update_veg_batch(hass, call.data)
+
+    async def handle_move_to_flower(call: ServiceCall) -> None:
+        """Handle the move_to_flower service call."""
+        await _move_to_flower(hass, call.data)
+
+    async def handle_list_veg_batches(call: ServiceCall) -> None:
+        """Handle the list_veg_batches service call."""
+        await _list_veg_batches(hass, call.data)
+
     hass.services.async_register(
         DOMAIN, SERVICE_ADD_JOURNAL, handle_add_journal_entry, schema=service_journal_schema
     )
@@ -206,6 +305,18 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     )
     hass.services.async_register(
         DOMAIN, SERVICE_GET_TODAY_TASKS, handle_get_today_tasks, schema=service_today_tasks_schema
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_ADD_VEG_BATCH, handle_add_veg_batch, schema=service_add_veg_batch_schema
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_UPDATE_VEG_BATCH, handle_update_veg_batch, schema=service_update_veg_batch_schema
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_MOVE_TO_FLOWER, handle_move_to_flower, schema=service_move_to_flower_schema
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_LIST_VEG_BATCHES, handle_list_veg_batches, schema=service_list_veg_batches_schema
     )
     
     _LOGGER.info("Grow Room Manager services registered")
@@ -535,3 +646,349 @@ async def _get_today_tasks(hass: HomeAssistant, data: dict[str, Any]) -> None:
         _LOGGER.info("Task for %s Day %d: %s", room_id, current_day, task["title"])
     else:
         _LOGGER.debug("No scheduled task for %s on Day %d", room_id, current_day)
+
+
+async def _add_veg_batch(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """Add a new veg batch and generate its tasks."""
+    import uuid
+    from datetime import date
+    
+    room_id = data["room_id"]
+    batch_name = data["batch_name"]
+    start_date = data["start_date"]
+    stage = data["stage"]
+    plant_count = data.get("plant_count", 0)
+    strain = data.get("strain", "")
+    destination_room = data.get("destination_room", "")
+    notes = data.get("notes", "")
+    
+    # Verify room exists and is a veg room
+    if room_id not in hass.data[DOMAIN]["rooms"]:
+        raise HomeAssistantError(f"Room {room_id} not found")
+    
+    room_config = hass.data[DOMAIN]["rooms"][room_id]
+    if room_config.get(CONF_ROOM_TYPE) != ROOM_TYPE_VEG:
+        raise HomeAssistantError(f"Room {room_id} is not a veg room")
+    
+    # Convert date to string
+    if isinstance(start_date, date):
+        start_date = start_date.isoformat()
+    
+    # Generate unique batch ID
+    batch_id = f"{batch_name.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    # Create batch record
+    batch = {
+        "batch_id": batch_id,
+        "batch_name": batch_name,
+        "start_date": start_date,
+        "stage": stage,
+        "plant_count": plant_count,
+        "strain": strain,
+        "destination_room": destination_room,
+        "notes": notes,
+        "active": True,
+        "created_at": datetime.now().isoformat(),
+        "stage_history": [
+            {
+                "stage": stage,
+                "date": start_date,
+                "notes": f"Batch created in {stage} stage"
+            }
+        ],
+    }
+    
+    # Add to batches
+    if room_id not in hass.data[DOMAIN]["veg_batches"]:
+        hass.data[DOMAIN]["veg_batches"][room_id] = []
+    
+    hass.data[DOMAIN]["veg_batches"][room_id].append(batch)
+    
+    # Save to file
+    await hass.async_add_executor_job(_save_veg_batches, hass, room_id)
+    
+    # Generate calendar/todo tasks for this batch
+    calendar_entity = room_config.get(CONF_CALENDAR_ENTITY)
+    todo_entity = room_config.get(CONF_TODO_ENTITY)
+    
+    if calendar_entity or todo_entity:
+        await _generate_veg_batch_tasks(hass, room_id, batch, calendar_entity, todo_entity)
+    
+    # Fire event for automations
+    hass.bus.async_fire(
+        f"{DOMAIN}_veg_batch_added",
+        {
+            "room_id": room_id,
+            "batch_id": batch_id,
+            "batch_name": batch_name,
+            "stage": stage,
+            "start_date": start_date,
+            "plant_count": plant_count,
+            "strain": strain,
+        }
+    )
+    
+    _LOGGER.info("Added veg batch '%s' to room %s in stage %s", batch_name, room_id, stage)
+
+
+async def _generate_veg_batch_tasks(
+    hass: HomeAssistant, 
+    room_id: str, 
+    batch: dict, 
+    calendar_entity: str | None,
+    todo_entity: str | None
+) -> None:
+    """Generate calendar/todo tasks for a veg batch based on its stage."""
+    from datetime import date
+    
+    batch_name = batch["batch_name"]
+    batch_id = batch["batch_id"]
+    start_date_str = batch["start_date"]
+    stage = batch["stage"]
+    
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+    
+    # Calculate day offset based on current stage
+    stage_offsets = {
+        PHASE_CLONE: 0,
+        PHASE_PREVEG: 14,
+        PHASE_EARLY_VEG: 21,
+        PHASE_LATE_VEG: 35,
+        PHASE_MOTHER: 0,  # Mother has its own schedule
+    }
+    
+    day_offset = stage_offsets.get(stage, 0)
+    
+    # Generate tasks from VEG_SCHEDULE
+    tasks_created = 0
+    for day_num, task_info in VEG_SCHEDULE.items():
+        # Only create tasks for current and future stages
+        if day_num < day_offset + 1:
+            continue
+        
+        # Calculate actual date
+        task_date = start_date + timedelta(days=day_num - day_offset - 1)
+        
+        # Skip past dates
+        if task_date < date.today():
+            continue
+        
+        task_title = f"[{room_id.upper()}:{batch_name}] Day {day_num - day_offset}: {task_info['title']}"
+        task_description = f"Batch: {batch_name}\nStrain: {batch.get('strain', 'N/A')}\n\n{task_info['description']}"
+        
+        # Create calendar event
+        if calendar_entity:
+            try:
+                await hass.services.async_call(
+                    "calendar",
+                    "create_event",
+                    {
+                        "entity_id": calendar_entity,
+                        "summary": task_title,
+                        "description": task_description,
+                        "start_date": str(task_date),
+                        "end_date": str(task_date + timedelta(days=1)),
+                    },
+                    blocking=True,
+                )
+            except Exception as err:
+                _LOGGER.warning("Failed to create calendar event: %s", err)
+        
+        # Create todo item
+        if todo_entity:
+            try:
+                await hass.services.async_call(
+                    "todo",
+                    "add_item",
+                    {
+                        "entity_id": todo_entity,
+                        "item": task_title,
+                        "due_date": str(task_date),
+                        "description": task_description,
+                    },
+                    blocking=True,
+                )
+            except Exception as err:
+                _LOGGER.warning("Failed to create todo item: %s", err)
+        
+        tasks_created += 1
+    
+    _LOGGER.info("Generated %d tasks for veg batch '%s'", tasks_created, batch_name)
+
+
+async def _update_veg_batch(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """Update an existing veg batch."""
+    room_id = data["room_id"]
+    batch_id = data["batch_id"]
+    
+    if room_id not in hass.data[DOMAIN]["veg_batches"]:
+        raise HomeAssistantError(f"No batches found for room {room_id}")
+    
+    batches = hass.data[DOMAIN]["veg_batches"][room_id]
+    batch_found = False
+    
+    for batch in batches:
+        if batch["batch_id"] == batch_id:
+            batch_found = True
+            
+            # Update fields if provided
+            if "stage" in data and data["stage"] != batch["stage"]:
+                old_stage = batch["stage"]
+                batch["stage"] = data["stage"]
+                batch["stage_history"].append({
+                    "stage": data["stage"],
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "notes": f"Stage changed from {old_stage} to {data['stage']}"
+                })
+                
+                # Fire stage change event
+                hass.bus.async_fire(
+                    f"{DOMAIN}_veg_stage_changed",
+                    {
+                        "room_id": room_id,
+                        "batch_id": batch_id,
+                        "batch_name": batch["batch_name"],
+                        "old_stage": old_stage,
+                        "new_stage": data["stage"],
+                    }
+                )
+            
+            if "plant_count" in data:
+                batch["plant_count"] = data["plant_count"]
+            if "destination_room" in data:
+                batch["destination_room"] = data["destination_room"]
+            if "notes" in data:
+                batch["notes"] = data["notes"]
+            if "active" in data:
+                batch["active"] = data["active"]
+            
+            batch["updated_at"] = datetime.now().isoformat()
+            break
+    
+    if not batch_found:
+        raise HomeAssistantError(f"Batch {batch_id} not found in room {room_id}")
+    
+    # Save changes
+    await hass.async_add_executor_job(_save_veg_batches, hass, room_id)
+    _LOGGER.info("Updated veg batch '%s' in room %s", batch_id, room_id)
+
+
+async def _move_to_flower(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """Move a veg batch to a flower room."""
+    from datetime import date
+    
+    room_id = data["room_id"]
+    batch_id = data["batch_id"]
+    flower_room_id = data["flower_room_id"]
+    flower_start_date = data.get("flower_start_date", date.today())
+    
+    # Verify veg room exists
+    if room_id not in hass.data[DOMAIN]["veg_batches"]:
+        raise HomeAssistantError(f"No batches found for room {room_id}")
+    
+    # Verify flower room exists and is a flower room
+    if flower_room_id not in hass.data[DOMAIN]["rooms"]:
+        raise HomeAssistantError(f"Flower room {flower_room_id} not found")
+    
+    flower_room = hass.data[DOMAIN]["rooms"][flower_room_id]
+    if flower_room.get(CONF_ROOM_TYPE, ROOM_TYPE_FLOWER) != ROOM_TYPE_FLOWER:
+        raise HomeAssistantError(f"Room {flower_room_id} is not a flower room")
+    
+    # Find and update the batch
+    batches = hass.data[DOMAIN]["veg_batches"][room_id]
+    batch_found = None
+    
+    for batch in batches:
+        if batch["batch_id"] == batch_id:
+            batch_found = batch
+            batch["active"] = False
+            batch["moved_to_flower"] = {
+                "flower_room_id": flower_room_id,
+                "date": datetime.now().isoformat(),
+                "flower_start_date": flower_start_date.isoformat() if isinstance(flower_start_date, date) else flower_start_date,
+            }
+            batch["stage_history"].append({
+                "stage": "Moved to Flower",
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "notes": f"Moved to flower room {flower_room_id}"
+            })
+            break
+    
+    if not batch_found:
+        raise HomeAssistantError(f"Batch {batch_id} not found in room {room_id}")
+    
+    # Save veg batch changes
+    await hass.async_add_executor_job(_save_veg_batches, hass, room_id)
+    
+    # Set the flower room start date
+    if isinstance(flower_start_date, date):
+        flower_start_date = flower_start_date.isoformat()
+    
+    # Update flower room start date
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.data.get(CONF_ROOM_ID) == flower_room_id:
+            new_data = {**entry.data, CONF_START_DATE: flower_start_date}
+            hass.config_entries.async_update_entry(entry, data=new_data)
+            
+            if flower_room_id in hass.data[DOMAIN]["rooms"]:
+                hass.data[DOMAIN]["rooms"][flower_room_id][CONF_START_DATE] = flower_start_date
+            
+            # Generate flower tasks
+            calendar_entity = entry.data.get(CONF_CALENDAR_ENTITY)
+            todo_entity = entry.data.get(CONF_TODO_ENTITY)
+            
+            if calendar_entity or todo_entity:
+                await _generate_tasks(hass, {
+                    "room_id": flower_room_id,
+                    "start_date": flower_start_date,
+                    "calendar_entity": calendar_entity,
+                    "todo_entity": todo_entity,
+                })
+            
+            # Reload to update sensors
+            await hass.config_entries.async_reload(entry.entry_id)
+            break
+    
+    # Fire event
+    hass.bus.async_fire(
+        f"{DOMAIN}_batch_moved_to_flower",
+        {
+            "veg_room_id": room_id,
+            "batch_id": batch_id,
+            "batch_name": batch_found["batch_name"],
+            "flower_room_id": flower_room_id,
+            "flower_start_date": flower_start_date,
+            "plant_count": batch_found.get("plant_count", 0),
+            "strain": batch_found.get("strain", ""),
+        }
+    )
+    
+    _LOGGER.info(
+        "Moved batch '%s' from %s to flower room %s (start: %s)",
+        batch_found["batch_name"], room_id, flower_room_id, flower_start_date
+    )
+
+
+async def _list_veg_batches(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    """List veg batches and fire an event with the data."""
+    room_id = data["room_id"]
+    active_only = data.get("active_only", True)
+    
+    if room_id not in hass.data[DOMAIN]["veg_batches"]:
+        batches = []
+    else:
+        batches = hass.data[DOMAIN]["veg_batches"][room_id]
+        if active_only:
+            batches = [b for b in batches if b.get("active", True)]
+    
+    # Fire event with batch list
+    hass.bus.async_fire(
+        f"{DOMAIN}_veg_batches_list",
+        {
+            "room_id": room_id,
+            "batch_count": len(batches),
+            "batches": batches,
+        }
+    )
+    
+    _LOGGER.info("Listed %d batches for room %s", len(batches), room_id)

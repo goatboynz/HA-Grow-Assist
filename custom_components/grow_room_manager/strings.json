@@ -4,7 +4,17 @@
     "step": {
       "user": {
         "title": "Add Grow Room",
-        "description": "Add a new grow room. Set start date OR select a sensor that provides the date.",
+        "description": "Choose the type of room to add.",
+        "data": {
+          "room_type": "Room Type"
+        },
+        "data_description": {
+          "room_type": "Flower rooms have a fixed 84-day cycle. Veg rooms track multiple batches continuously."
+        }
+      },
+      "flower_room": {
+        "title": "Add Flower Room",
+        "description": "Configure a flower room with an 84-day cycle. Set start date OR select a sensor.",
         "data": {
           "room_id": "Room ID",
           "name": "Room Name",
@@ -21,6 +31,22 @@
           "calendar_entity": "Calendar to add scheduled tasks to",
           "todo_entity": "Todo list to add tasks to"
         }
+      },
+      "veg_room": {
+        "title": "Add Veg Room",
+        "description": "Configure a veg room for tracking multiple plant batches (clones, mothers, etc.).",
+        "data": {
+          "room_id": "Room ID",
+          "name": "Room Name",
+          "calendar_entity": "Calendar (optional)",
+          "todo_entity": "Todo List (optional)"
+        },
+        "data_description": {
+          "room_id": "Unique ID like veg, veg1, mothers",
+          "name": "Display name for this room",
+          "calendar_entity": "Calendar to add batch tasks to",
+          "todo_entity": "Todo list to add batch tasks to"
+        }
       }
     },
     "abort": {
@@ -31,11 +57,24 @@
     "step": {
       "init": {
         "title": "Room Settings",
-        "description": "Update room settings. Use either a fixed date OR a sensor entity.",
+        "description": "Update room settings."
+      },
+      "flower_options": {
+        "title": "Flower Room Settings",
+        "description": "Update flower room settings. Use either a fixed date OR a sensor entity.",
         "data": {
           "name": "Room Name",
           "start_date": "Start Date (fixed)",
           "start_date_entity": "Start Date Sensor (dynamic)",
+          "calendar_entity": "Calendar",
+          "todo_entity": "Todo List"
+        }
+      },
+      "veg_options": {
+        "title": "Veg Room Settings",
+        "description": "Update veg room settings.",
+        "data": {
+          "name": "Room Name",
           "calendar_entity": "Calendar",
           "todo_entity": "Todo List"
         }
@@ -49,7 +88,7 @@
       "fields": {
         "room_id": {
           "name": "Room ID",
-          "description": "The room ID (e.g., f1, f2, f3)"
+          "description": "The room ID (e.g., f1, f2, veg)"
         },
         "note": {
           "name": "Note",
@@ -63,7 +102,7 @@
     },
     "generate_tasks": {
       "name": "Generate Tasks",
-      "description": "Generate 35 calendar events and todo items for the 84-day Athena schedule.",
+      "description": "Generate calendar events and todo items for the 84-day Athena schedule.",
       "fields": {
         "room_id": {
           "name": "Room ID",
@@ -85,7 +124,7 @@
     },
     "set_start_date": {
       "name": "Set Start Date",
-      "description": "Set the start date for a room.",
+      "description": "Set the start date for a flower room.",
       "fields": {
         "room_id": {
           "name": "Room ID",
@@ -128,6 +167,114 @@
         "room_id": {
           "name": "Room ID",
           "description": "The room ID"
+        }
+      }
+    },
+    "add_veg_batch": {
+      "name": "Add Veg Batch",
+      "description": "Add a new batch of plants to a veg room.",
+      "fields": {
+        "room_id": {
+          "name": "Room ID",
+          "description": "The veg room ID"
+        },
+        "batch_name": {
+          "name": "Batch Name",
+          "description": "Name for this batch"
+        },
+        "start_date": {
+          "name": "Start Date",
+          "description": "When this batch started"
+        },
+        "stage": {
+          "name": "Stage",
+          "description": "Current growth stage"
+        },
+        "plant_count": {
+          "name": "Plant Count",
+          "description": "Number of plants"
+        },
+        "strain": {
+          "name": "Strain",
+          "description": "Strain/genetics"
+        },
+        "destination_room": {
+          "name": "Destination",
+          "description": "Target flower room"
+        },
+        "notes": {
+          "name": "Notes",
+          "description": "Additional notes"
+        }
+      }
+    },
+    "update_veg_batch": {
+      "name": "Update Veg Batch",
+      "description": "Update an existing veg batch.",
+      "fields": {
+        "room_id": {
+          "name": "Room ID",
+          "description": "The veg room ID"
+        },
+        "batch_id": {
+          "name": "Batch ID",
+          "description": "The batch to update"
+        },
+        "stage": {
+          "name": "Stage",
+          "description": "New growth stage"
+        },
+        "plant_count": {
+          "name": "Plant Count",
+          "description": "Updated plant count"
+        },
+        "destination_room": {
+          "name": "Destination",
+          "description": "Target flower room"
+        },
+        "notes": {
+          "name": "Notes",
+          "description": "Updated notes"
+        },
+        "active": {
+          "name": "Active",
+          "description": "Set false to archive"
+        }
+      }
+    },
+    "move_to_flower": {
+      "name": "Move to Flower",
+      "description": "Move a veg batch to a flower room.",
+      "fields": {
+        "room_id": {
+          "name": "Veg Room ID",
+          "description": "The veg room"
+        },
+        "batch_id": {
+          "name": "Batch ID",
+          "description": "The batch to move"
+        },
+        "flower_room_id": {
+          "name": "Flower Room",
+          "description": "Target flower room"
+        },
+        "flower_start_date": {
+          "name": "Flower Start Date",
+          "description": "Day 1 of flower (defaults to today)"
+        }
+      }
+    },
+    "list_veg_batches": {
+      "name": "List Veg Batches",
+      "description": "List all batches in a veg room.",
+      "fields": {
+        "room_id": {
+          "name": "Room ID",
+          "description": "The veg room ID"
+        },
+        "active_only": {
+          "name": "Active Only",
+          "description": "Only show active batches"
         }
       }
     }

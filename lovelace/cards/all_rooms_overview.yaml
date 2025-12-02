@@ -1,14 +1,18 @@
 # =============================================================================
 # ALL ROOMS OVERVIEW CARD
 # =============================================================================
-# Shows status of all rooms at a glance
+# Shows status of all rooms at a glance (flower and veg)
 # =============================================================================
 
 type: vertical-stack
 cards:
+  - type: custom:mushroom-title-card
+    title: "🌿 Grow Room Overview"
+    subtitle: "All rooms at a glance"
+
+  # Flower Rooms Section
   - type: markdown
-    content: |
-      # 🌿 Grow Room Overview
+    content: "## 🌸 Flower Rooms"
 
   - type: horizontal-stack
     cards:
@@ -55,6 +59,35 @@ cards:
           yellow: 50
           red: 0
 
+  # Veg Room Section
+  - type: markdown
+    content: "## 🌱 Veg Room"
+
+  - type: horizontal-stack
+    cards:
+      - type: entity
+        entity: sensor.veg_room_status
+        name: "Veg"
+        icon: mdi:sprout-outline
+      - type: entity
+        entity: sensor.veg_room_active_batches
+        name: "Batches"
+        icon: mdi:package-variant
+
+  - type: markdown
+    content: >-
+      {% set batches = state_attr('sensor.veg_room_status', 'batches_by_stage') %}
+      {% if batches %}
+      | Stage | Batches | Plants |
+      |-------|---------|--------|
+      {% for stage, data in batches.items() %}
+      | {{ stage }} | {{ data.count }} | {{ data.plants }} |
+      {% endfor %}
+      {% else %}
+      No active batches in veg room
+      {% endif %}
+
+  # Next Tasks Section
   - type: entities
     title: "📋 Next Tasks"
     entities:
@@ -64,3 +97,5 @@ cards:
         name: "F2"
       - entity: sensor.flower_room_3_next_task
         name: "F3"
+      - entity: sensor.veg_room_next_task
+        name: "Veg"

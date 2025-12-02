@@ -7,11 +7,8 @@
 # Just add rooms via the UI:
 # 1. Settings > Devices & Services > Add Integration
 # 2. Search "Grow Room Manager"
-# 3. Enter room ID (f1, f2, etc.), name, and start date
-# 4. Optionally select a calendar and todo list
-#
-# To change the start date later:
-# Settings > Devices & Services > Grow Room Manager > Configure
+# 3. Choose room type (Flower or Veg)
+# 4. Enter room details
 #
 # =============================================================================
 
@@ -36,7 +33,54 @@ logger:
 # 3. When adding a room, select these entities in the config flow
 #
 # =============================================================================
-# SERVICE EXAMPLES
+# OPTIONAL: Helpers for Veg Batch Manager Card
+# =============================================================================
+# If using the veg_batch_manager_card.yaml, add these helpers:
+
+input_text:
+  veg_batch_name:
+    name: Batch Name
+    initial: ""
+  veg_batch_strain:
+    name: Strain
+    initial: ""
+
+input_datetime:
+  veg_batch_start_date:
+    name: Batch Start Date
+    has_date: true
+    has_time: false
+
+input_number:
+  veg_batch_plant_count:
+    name: Plant Count
+    min: 1
+    max: 500
+    step: 1
+    initial: 24
+    mode: box
+
+input_select:
+  veg_batch_stage:
+    name: Stage
+    options:
+      - Clone
+      - Pre-Veg
+      - Early Veg
+      - Late Veg
+      - Mother
+    initial: Clone
+  veg_batch_destination:
+    name: Destination Room
+    options:
+      - f1
+      - f2
+      - f3
+      - none
+    initial: f1
+
+# =============================================================================
+# SERVICE EXAMPLES - FLOWER ROOMS
 # =============================================================================
 #
 # Generate tasks (if calendar/todo configured):
@@ -58,5 +102,80 @@ logger:
 #   data:
 #     room_id: "f1"
 #     start_date: "2024-12-01"
+#
+# =============================================================================
+# SERVICE EXAMPLES - VEG ROOMS
+# =============================================================================
+#
+# Add a new batch of clones:
+#   service: grow_room_manager.add_veg_batch
+#   data:
+#     room_id: "veg"
+#     batch_name: "OG Kush Dec 2024"
+#     start_date: "2024-12-01"
+#     stage: "Clone"
+#     plant_count: 24
+#     strain: "OG Kush"
+#     destination_room: "f1"
+#     notes: "Clones from mother #3"
+#
+# Update batch stage (e.g., clones rooted, moving to pre-veg):
+#   service: grow_room_manager.update_veg_batch
+#   data:
+#     room_id: "veg"
+#     batch_id: "og_kush_dec_2024_20241201_120000"
+#     stage: "Pre-Veg"
+#     notes: "All clones rooted successfully"
+#
+# Move batch to flower room:
+#   service: grow_room_manager.move_to_flower
+#   data:
+#     room_id: "veg"
+#     batch_id: "og_kush_dec_2024_20241201_120000"
+#     flower_room_id: "f1"
+#     flower_start_date: "2024-12-15"
+#
+# List all active batches:
+#   service: grow_room_manager.list_veg_batches
+#   data:
+#     room_id: "veg"
+#     active_only: true
+#
+# =============================================================================
+# AUTOMATION EXAMPLES
+# =============================================================================
+#
+# Notify when batch is ready for flower:
+#
+# automation:
+#   - alias: "Veg Batch Ready for Flower"
+#     trigger:
+#       - platform: event
+#         event_type: grow_room_manager_veg_stage_changed
+#     condition:
+#       - condition: template
+#         value_template: "{{ trigger.event.data.new_stage == 'Late Veg' }}"
+#     action:
+#       - service: notify.mobile_app
+#         data:
+#           title: "🌱 Batch Ready for Flower"
+#           message: >-
+#             {{ trigger.event.data.batch_name }} is now in Late Veg
+#             and ready to move to flower room!
+#
+# Notify when batch moved to flower:
+#
+#   - alias: "Batch Moved to Flower"
+#     trigger:
+#       - platform: event
+#         event_type: grow_room_manager_batch_moved_to_flower
+#     action:
+#       - service: notify.mobile_app
+#         data:
+#           title: "🌸 Batch Moved to Flower"
+#           message: >-
+#             {{ trigger.event.data.batch_name }} moved to 
+#             {{ trigger.event.data.flower_room_id }}. 
+#             Flower cycle starts {{ trigger.event.data.flower_start_date }}.
 #
 # =============================================================================

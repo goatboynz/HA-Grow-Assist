@@ -127,3 +127,188 @@ get_today_tasks:
       example: "f1"
       selector:
         text:
+
+add_veg_batch:
+  name: Add Veg Batch
+  description: Add a new batch of plants to a veg room and generate tasks.
+  fields:
+    room_id:
+      name: Room ID
+      description: The ID of the veg room.
+      required: true
+      example: "veg"
+      selector:
+        text:
+    batch_name:
+      name: Batch Name
+      description: A name for this batch (e.g., "Clones Dec 2024", "Mothers").
+      required: true
+      example: "Clones Dec 2024"
+      selector:
+        text:
+    start_date:
+      name: Start Date
+      description: The date this batch started (when clones were taken/received).
+      required: true
+      example: "2024-12-01"
+      selector:
+        date:
+    stage:
+      name: Stage
+      description: The current growth stage of this batch.
+      required: true
+      example: "Clone"
+      selector:
+        select:
+          options:
+            - "Clone"
+            - "Pre-Veg"
+            - "Early Veg"
+            - "Late Veg"
+            - "Mother"
+    plant_count:
+      name: Plant Count
+      description: Number of plants in this batch.
+      required: false
+      example: 24
+      selector:
+        number:
+          min: 1
+          max: 1000
+          mode: box
+    strain:
+      name: Strain
+      description: The strain/genetics of this batch.
+      required: false
+      example: "OG Kush"
+      selector:
+        text:
+    destination_room:
+      name: Destination Room
+      description: The flower room this batch is destined for.
+      required: false
+      example: "f1"
+      selector:
+        text:
+    notes:
+      name: Notes
+      description: Any additional notes about this batch.
+      required: false
+      example: "Healthy clones from mother #3"
+      selector:
+        text:
+          multiline: true
+
+update_veg_batch:
+  name: Update Veg Batch
+  description: Update an existing veg batch (change stage, plant count, etc.).
+  fields:
+    room_id:
+      name: Room ID
+      description: The ID of the veg room.
+      required: true
+      example: "veg"
+      selector:
+        text:
+    batch_id:
+      name: Batch ID
+      description: The unique ID of the batch to update.
+      required: true
+      example: "clones_dec_2024_20241201_120000"
+      selector:
+        text:
+    stage:
+      name: Stage
+      description: Update the growth stage.
+      required: false
+      example: "Early Veg"
+      selector:
+        select:
+          options:
+            - "Clone"
+            - "Pre-Veg"
+            - "Early Veg"
+            - "Late Veg"
+            - "Mother"
+    plant_count:
+      name: Plant Count
+      description: Update the plant count.
+      required: false
+      example: 20
+      selector:
+        number:
+          min: 0
+          max: 1000
+          mode: box
+    destination_room:
+      name: Destination Room
+      description: Update the destination flower room.
+      required: false
+      example: "f2"
+      selector:
+        text:
+    notes:
+      name: Notes
+      description: Update notes.
+      required: false
+      selector:
+        text:
+          multiline: true
+    active:
+      name: Active
+      description: Set to false to archive this batch.
+      required: false
+      selector:
+        boolean:
+
+move_to_flower:
+  name: Move to Flower
+  description: Move a veg batch to a flower room and start the flower cycle.
+  fields:
+    room_id:
+      name: Veg Room ID
+      description: The ID of the veg room the batch is in.
+      required: true
+      example: "veg"
+      selector:
+        text:
+    batch_id:
+      name: Batch ID
+      description: The unique ID of the batch to move.
+      required: true
+      example: "clones_dec_2024_20241201_120000"
+      selector:
+        text:
+    flower_room_id:
+      name: Flower Room ID
+      description: The ID of the flower room to move to.
+      required: true
+      example: "f1"
+      selector:
+        text:
+    flower_start_date:
+      name: Flower Start Date
+      description: The start date for the flower cycle (defaults to today).
+      required: false
+      example: "2024-12-15"
+      selector:
+        date:
+
+list_veg_batches:
+  name: List Veg Batches
+  description: List all batches in a veg room and fire a grow_room_manager_veg_batches_list event.
+  fields:
+    room_id:
+      name: Room ID
+      description: The ID of the veg room.
+      required: true
+      example: "veg"
+      selector:
+        text:
+    active_only:
+      name: Active Only
+      description: Only list active batches (default true).
+      required: false
+      default: true
+      selector:
+        boolean:

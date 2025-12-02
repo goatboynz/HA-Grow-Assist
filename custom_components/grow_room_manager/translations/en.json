@@ -4,18 +4,48 @@
     "step": {
       "user": {
         "title": "Add Grow Room",
-        "description": "Configure a new grow room. You can add multiple rooms by adding this integration multiple times.",
+        "description": "Choose the type of room to add.",
+        "data": {
+          "room_type": "Room Type"
+        },
+        "data_description": {
+          "room_type": "Flower rooms have a fixed 84-day cycle. Veg rooms track multiple batches continuously."
+        }
+      },
+      "flower_room": {
+        "title": "Add Flower Room",
+        "description": "Configure a flower room with an 84-day cycle. Set start date OR select a sensor.",
         "data": {
           "room_id": "Room ID",
           "name": "Room Name",
-          "calendar_entity": "Calendar Entity (optional)",
-          "todo_entity": "Todo List Entity (optional)"
+          "start_date": "Start Date (fixed)",
+          "start_date_entity": "Start Date Sensor (dynamic)",
+          "calendar_entity": "Calendar (optional)",
+          "todo_entity": "Todo List (optional)"
         },
         "data_description": {
-          "room_id": "Unique identifier for this room (e.g., f1, f2, f3). Used in service calls.",
+          "room_id": "Unique ID like f1, f2, f3",
           "name": "Display name for this room",
-          "calendar_entity": "Calendar to add grow tasks to",
-          "todo_entity": "Todo list to add grow tasks to"
+          "start_date": "Fixed date - Day 1 of flower",
+          "start_date_entity": "Sensor or input_datetime that provides the start date",
+          "calendar_entity": "Calendar to add scheduled tasks to",
+          "todo_entity": "Todo list to add tasks to"
+        }
+      },
+      "veg_room": {
+        "title": "Add Veg Room",
+        "description": "Configure a veg room for tracking multiple plant batches (clones, mothers, etc.).",
+        "data": {
+          "room_id": "Room ID",
+          "name": "Room Name",
+          "calendar_entity": "Calendar (optional)",
+          "todo_entity": "Todo List (optional)"
+        },
+        "data_description": {
+          "room_id": "Unique ID like veg, veg1, mothers",
+          "name": "Display name for this room",
+          "calendar_entity": "Calendar to add batch tasks to",
+          "todo_entity": "Todo list to add batch tasks to"
         }
       }
     },
@@ -26,63 +56,27 @@
   "options": {
     "step": {
       "init": {
-        "title": "Configure Grow Room",
+        "title": "Room Settings",
+        "description": "Update room settings."
+      },
+      "flower_options": {
+        "title": "Flower Room Settings",
+        "description": "Update flower room settings. Use either a fixed date OR a sensor entity.",
         "data": {
           "name": "Room Name",
-          "calendar_entity": "Calendar Entity",
-          "todo_entity": "Todo List Entity"
+          "start_date": "Start Date (fixed)",
+          "start_date_entity": "Start Date Sensor (dynamic)",
+          "calendar_entity": "Calendar",
+          "todo_entity": "Todo List"
         }
-      }
-    }
-  },
-  "services": {
-    "add_journal_entry": {
-      "name": "Add Journal Entry",
-      "description": "Add a journal entry with optional camera snapshot for a grow room.",
-      "fields": {
-        "room_id": {
-          "name": "Room ID",
-          "description": "The ID of the grow room (e.g., f1, f2, f3)."
-        },
-        "note": {
-          "name": "Note",
-          "description": "The journal note text to save."
-        },
-        "image_entity": {
-          "name": "Camera Entity",
-          "description": "Optional camera entity to capture a snapshot from."
-        }
-      }
-    },
-    "generate_tasks": {
-      "name": "Generate Tasks",
-      "description": "Generate calendar events and todo items from the Athena Pro Line schedule.",
-      "fields": {
-        "room_id": {
-          "name": "Room ID",
-          "description": "The ID of the grow room (e.g., f1, f2, f3)."
-        },
-        "start_date": {
-          "name": "Start Date",
-          "description": "The first day of flower (Day 1) for this grow cycle."
-        },
-        "calendar_entity": {
-          "name": "Calendar Entity",
-          "description": "Calendar to add events to (overrides room config)."
-        },
-        "todo_entity": {
-          "name": "Todo Entity",
-          "description": "Todo list to add items to (overrides room config)."
-        }
-      }
-    },
-    "clear_tasks": {
-      "name": "Clear Tasks",
-      "description": "Clear all generated tasks for a grow room.",
-      "fields": {
-        "room_id": {
-          "name": "Room ID",
-          "description": "The ID of the grow room to clear tasks for."
+      },
+      "veg_options": {
+        "title": "Veg Room Settings",
+        "description": "Update veg room settings.",
+        "data": {
+          "name": "Room Name",
+          "calendar_entity": "Calendar",
+          "todo_entity": "Todo List"
         }
       }
     }

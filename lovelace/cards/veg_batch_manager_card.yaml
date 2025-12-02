@@ -1,0 +1,92 @@
+# Veg Batch Manager Card
+# Add and manage veg batches
+type: vertical-stack
+cards:
+  - type: custom:mushroom-title-card
+    title: "📦 Batch Manager"
+    subtitle: "Add and track plant batches"
+
+  # Active Batches List
+  - type: markdown
+    content: >-
+      ## Active Batches
+
+      {% set batches = state_attr('sensor.veg_room_active_batches', 'batches') %}
+      {% if batches and batches | length > 0 %}
+      | Batch | Stage | Plants | Strain | Destination |
+      |-------|-------|--------|--------|-------------|
+      {% for b in batches %}
+      | {{ b.name }} | {{ b.stage }} | {{ b.plants }} | {{ b.strain or '-' }} | {{ b.destination or '-' }} |
+      {% endfor %}
+      {% else %}
+      No active batches. Add one below!
+      {% endif %}
+
+  # Add New Batch Section
+  - type: custom:mushroom-title-card
+    title: ""
+    subtitle: "➕ Add New Batch"
+
+  - type: entities
+    entities:
+      - type: custom:text-input-row
+        entity: input_text.veg_batch_name
+        name: Batch Name
+      - entity: input_datetime.veg_batch_start_date
+        name: Start Date
+      - entity: input_select.veg_batch_stage
+        name: Stage
+      - entity: input_number.veg_batch_plant_count
+        name: Plant Count
+      - entity: input_text.veg_batch_strain
+        name: Strain
+      - entity: input_select.veg_batch_destination
+        name: Destination Room
+
+  - type: button
+    name: Add Batch
+    icon: mdi:plus-circle
+    tap_action:
+      action: call-service
+      service: grow_room_manager.add_veg_batch
+      data:
+        room_id: veg
+        batch_name: "{{ states('input_text.veg_batch_name') }}"
+        start_date: "{{ states('input_datetime.veg_batch_start_date') }}"
+        stage: "{{ states('input_select.veg_batch_stage') }}"
+        plant_count: "{{ states('input_number.veg_batch_plant_count') | int }}"
+        strain: "{{ states('input_text.veg_batch_strain') }}"
+        destination_room: "{{ states('input_select.veg_batch_destination') }}"
+
+  # Helper entities needed (add to configuration.yaml):
+  # input_text:
+  #   veg_batch_name:
+  #     name: Batch Name
+  #   veg_batch_strain:
+  #     name: Strain
+  # input_datetime:
+  #   veg_batch_start_date:
+  #     name: Start Date
+  #     has_date: true
+  #     has_time: false
+  # input_number:
+  #   veg_batch_plant_count:
+  #     name: Plant Count
+  #     min: 1
+  #     max: 500
+  #     step: 1
+  # input_select:
+  #   veg_batch_stage:
+  #     name: Stage
+  #     options:
+  #       - Clone
+  #       - Pre-Veg
+  #       - Early Veg
+  #       - Late Veg
+  #       - Mother
+  #   veg_batch_destination:
+  #     name: Destination
+  #     options:
+  #       - f1
+  #       - f2
+  #       - f3

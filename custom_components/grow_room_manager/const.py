@@ -9,11 +9,33 @@ CONF_CALENDAR_ENTITY: Final = "calendar_entity"
 CONF_TODO_ENTITY: Final = "todo_entity"
 CONF_START_DATE_ENTITY: Final = "start_date_entity"
 CONF_START_DATE: Final = "start_date"
+CONF_ROOM_TYPE: Final = "room_type"
+CONF_DESTINATION_ROOM: Final = "destination_room"
 
-# Grow phases
+# Room types
+ROOM_TYPE_FLOWER: Final = "flower"
+ROOM_TYPE_VEG: Final = "veg"
+
+# Grow phases - Flower
 PHASE_STRETCH: Final = "Stretch"
 PHASE_BULK: Final = "Bulk"
 PHASE_FINISH: Final = "Finish"
+
+# Grow phases - Veg
+PHASE_CLONE: Final = "Clone"
+PHASE_PREVEG: Final = "Pre-Veg"
+PHASE_EARLY_VEG: Final = "Early Veg"
+PHASE_LATE_VEG: Final = "Late Veg"
+PHASE_MOTHER: Final = "Mother"
+
+# Veg stage durations (typical days)
+VEG_STAGE_DURATIONS: Final = {
+    PHASE_CLONE: 14,      # 2 weeks for rooting
+    PHASE_PREVEG: 7,      # 1 week transition
+    PHASE_EARLY_VEG: 14,  # 2 weeks
+    PHASE_LATE_VEG: 14,   # 2 weeks (ready for flower)
+    PHASE_MOTHER: 0,      # Indefinite
+}
 
 # EC targets by phase
 EC_STRETCH: Final = 3.0
@@ -32,16 +54,31 @@ SERVICE_CLEAR_TASKS: Final = "clear_tasks"
 SERVICE_EXPORT_JOURNAL: Final = "export_journal"
 SERVICE_SET_START_DATE: Final = "set_start_date"
 SERVICE_GET_TODAY_TASKS: Final = "get_today_tasks"
+SERVICE_ADD_VEG_BATCH: Final = "add_veg_batch"
+SERVICE_UPDATE_VEG_BATCH: Final = "update_veg_batch"
+SERVICE_MOVE_TO_FLOWER: Final = "move_to_flower"
+SERVICE_LIST_VEG_BATCHES: Final = "list_veg_batches"
+
+# Veg EC targets by stage
+EC_CLONE: Final = 0.8
+EC_PREVEG: Final = 1.2
+EC_EARLY_VEG: Final = 1.8
+EC_LATE_VEG: Final = 2.2
+EC_MOTHER: Final = 2.0
 
 # Athena Pro Line Feeding Recipes (grams per liter)
 # Based on Athena Pro Line feed charts
 ATHENA_FEED_CHART: Final = {
     # Phase: {product: grams_per_liter}
+    # === FLOWER PHASES ===
     PHASE_STRETCH: {
         "core": 0.79,      # 3g per gallon = 0.79g/L
         "bloom": 0.79,     # 3g per gallon = 0.79g/L
         "cleanse": 0,      # Not used in stretch
         "fade": 0,         # Not used in stretch
+        "balance": 0,      # Not used in flower
+        "grow": 0,         # Not used in flower
+        "ph_down": 0,      # As needed
         "target_ec": 3.0,
         "target_ph": "5.8-6.0",
     },
@@ -50,6 +87,9 @@ ATHENA_FEED_CHART: Final = {
         "bloom": 0.79,     # 3g per gallon = 0.79g/L
         "cleanse": 0,      # Optional weekly
         "fade": 0,         # Not used in bulk
+        "balance": 0,      # Not used in flower
+        "grow": 0,         # Not used in flower
+        "ph_down": 0,      # As needed
         "target_ec": 3.0,
         "target_ph": "5.8-6.0",
     },
@@ -58,8 +98,67 @@ ATHENA_FEED_CHART: Final = {
         "bloom": 0,        # No bloom in finish
         "cleanse": 0.26,   # 1g per gallon = 0.26g/L (optional flush)
         "fade": 0.79,      # 3g per gallon = 0.79g/L
+        "balance": 0,      # Not used in flower
+        "grow": 0,         # Not used in flower
+        "ph_down": 0,      # As needed
         "target_ec": 1.5,
         "target_ph": "5.8-6.0",
+    },
+    # === VEG PHASES ===
+    PHASE_CLONE: {
+        "core": 0.26,      # 1g per gallon = 0.26g/L (light feed)
+        "grow": 0.26,      # 1g per gallon = 0.26g/L
+        "bloom": 0,        # Not used in veg
+        "cleanse": 0,      # Not used
+        "fade": 0,         # Not used
+        "balance": 0.13,   # 0.5g per gallon for calcium
+        "ph_down": 0,      # As needed to hit 5.8-6.0
+        "target_ec": 0.8,
+        "target_ph": "5.8-6.2",
+    },
+    PHASE_PREVEG: {
+        "core": 0.40,      # 1.5g per gallon
+        "grow": 0.40,      # 1.5g per gallon
+        "bloom": 0,        # Not used in veg
+        "cleanse": 0,      # Not used
+        "fade": 0,         # Not used
+        "balance": 0.13,   # 0.5g per gallon
+        "ph_down": 0,      # As needed
+        "target_ec": 1.2,
+        "target_ph": "5.8-6.2",
+    },
+    PHASE_EARLY_VEG: {
+        "core": 0.53,      # 2g per gallon
+        "grow": 0.53,      # 2g per gallon
+        "bloom": 0,        # Not used in veg
+        "cleanse": 0,      # Optional weekly
+        "fade": 0,         # Not used
+        "balance": 0.26,   # 1g per gallon
+        "ph_down": 0,      # As needed
+        "target_ec": 1.8,
+        "target_ph": "5.8-6.2",
+    },
+    PHASE_LATE_VEG: {
+        "core": 0.66,      # 2.5g per gallon
+        "grow": 0.66,      # 2.5g per gallon
+        "bloom": 0,        # Not used in veg
+        "cleanse": 0,      # Optional weekly
+        "fade": 0,         # Not used
+        "balance": 0.26,   # 1g per gallon
+        "ph_down": 0,      # As needed
+        "target_ec": 2.2,
+        "target_ph": "5.8-6.2",
+    },
+    PHASE_MOTHER: {
+        "core": 0.53,      # 2g per gallon (moderate)
+        "grow": 0.53,      # 2g per gallon
+        "bloom": 0,        # Not used
+        "cleanse": 0.26,   # Weekly flush recommended
+        "fade": 0,         # Not used
+        "balance": 0.26,   # 1g per gallon
+        "ph_down": 0,      # As needed
+        "target_ec": 2.0,
+        "target_ph": "5.8-6.2",
     },
 }
 
@@ -964,5 +1063,534 @@ ATHENA_SCHEDULE: Final = {
         "phase": PHASE_FINISH,
         "priority": "critical",
         "duration_hours": 8,
+    },
+}
+
+
+# Veg Room Schedule - Tasks for each stage (relative to batch start date)
+# Format: {day: {"title": str, "description": str, "stage": str, ...}}
+VEG_SCHEDULE: Final = {
+    # =========================================================================
+    # CLONE STAGE (Days 1-14)
+    # =========================================================================
+    1: {
+        "title": "🌱 CLONE DAY - New Batch Started",
+        "description": (
+            "DAY 1 - CLONES TAKEN/RECEIVED\n\n"
+            "INITIAL SETUP:\n"
+            "• Place clones in propagation dome/tray\n"
+            "• Humidity dome at 90%+ RH\n"
+            "• Temperature: 75-80°F (24-27°C)\n"
+            "• Light: Low intensity (200-400 PPFD)\n"
+            "• 18/6 or 24/0 light cycle\n\n"
+            "ROOTING MEDIUM:\n"
+            "• Rockwool cubes, rapid rooters, or similar\n"
+            "• Pre-soak in pH 5.5-6.0 water\n"
+            "• Light nutrient solution (EC 0.4-0.6)\n\n"
+            "FIRST WEEK CARE:\n"
+            "• Mist dome 2-3x daily\n"
+            "• Vent dome slightly after Day 3\n"
+            "• Watch for wilting or yellowing\n"
+            "• No direct feeding yet\n\n"
+            "[Source: Athena Handbook, Propagation]"
+        ),
+        "stage": PHASE_CLONE,
+        "category": "milestone",
+        "priority": "high",
+        "duration_hours": 2,
+    },
+    3: {
+        "title": "🐛 Clone IPM Spray #1",
+        "description": (
+            "CLONE STAGE - IPM APPLICATION\n\n"
+            "SPRAY PROTOCOL:\n"
+            "• Light IPM spray on clones\n"
+            "• Use gentle/diluted solution\n"
+            "• Spray during low light period\n"
+            "• Ensure dome is vented after\n\n"
+            "CLONE CHECK:\n"
+            "□ Any signs of wilting?\n"
+            "□ Yellowing leaves (normal if minor)?\n"
+            "□ Mold or fungus in dome?\n"
+            "□ Condensation management\n\n"
+            "DOME MANAGEMENT:\n"
+            "• Start venting dome slightly\n"
+            "• Crack vents 25% open\n"
+            "• Reduce misting frequency\n\n"
+            "[Source: Athena Handbook, IPM Protocol]"
+        ),
+        "stage": PHASE_CLONE,
+        "category": "ipm",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    7: {
+        "title": "🔍 Clone Week 1 Check - Root Development",
+        "description": (
+            "CLONE STAGE - WEEK 1 COMPLETE\n\n"
+            "ROOT CHECK:\n"
+            "□ Gently check for root bumps\n"
+            "□ Some clones may show roots\n"
+            "□ Others may take another week\n"
+            "□ Don't disturb too much\n\n"
+            "DOME ADJUSTMENT:\n"
+            "• Open vents to 50%\n"
+            "• Reduce humidity gradually\n"
+            "• Target 70-80% RH now\n"
+            "• Mist only if wilting\n\n"
+            "FEEDING:\n"
+            "• Light feed if roots showing\n"
+            "• EC 0.6-0.8 max\n"
+            "• pH 5.8-6.0\n"
+            "• Use Athena Core + Grow (light)\n\n"
+            "IPM:\n"
+            "• Second IPM spray today\n"
+            "• Continue monitoring for pests\n\n"
+            "[Source: Athena Handbook, Propagation]"
+        ),
+        "stage": PHASE_CLONE,
+        "category": "maintenance",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    10: {
+        "title": "🐛 Clone IPM Spray #2 + Hardening",
+        "description": (
+            "CLONE STAGE - HARDENING OFF\n\n"
+            "IPM APPLICATION:\n"
+            "• Continue IPM protocol\n"
+            "• Clones more resilient now\n\n"
+            "HARDENING PROTOCOL:\n"
+            "• Remove dome for 1-2 hours daily\n"
+            "• Gradually increase light intensity\n"
+            "• Target 60-70% RH ambient\n"
+            "• Watch for stress signs\n\n"
+            "ROOT DEVELOPMENT:\n"
+            "□ Most clones should show roots\n"
+            "□ Roots should be white and healthy\n"
+            "□ Brown roots = problem\n"
+            "□ Prepare for transplant\n\n"
+            "[Source: Athena Handbook, Propagation]"
+        ),
+        "stage": PHASE_CLONE,
+        "category": "ipm",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    14: {
+        "title": "✅ CLONE COMPLETE - Ready for Pre-Veg",
+        "description": (
+            "DAY 14 - CLONE STAGE COMPLETE\n\n"
+            "🎉 CLONES READY FOR TRANSPLANT!\n\n"
+            "TRANSPLANT CHECKLIST:\n"
+            "□ Roots visible and healthy\n"
+            "□ Clones hardened off\n"
+            "□ New containers prepared\n"
+            "□ Growing medium ready\n\n"
+            "TRANSPLANT PROTOCOL:\n"
+            "1. Pre-moisten new medium\n"
+            "2. Make hole for clone/cube\n"
+            "3. Gently place clone\n"
+            "4. Light water around base\n"
+            "5. No heavy feeding for 2-3 days\n\n"
+            "STAGE TRANSITION:\n"
+            "• Move to Pre-Veg area\n"
+            "• Increase light to 400-600 PPFD\n"
+            "• Begin regular veg feeding\n"
+            "• Update batch status\n\n"
+            "[Source: Athena Handbook, Propagation]"
+        ),
+        "stage": PHASE_CLONE,
+        "category": "milestone",
+        "priority": "high",
+        "duration_hours": 2,
+    },
+    # =========================================================================
+    # PRE-VEG STAGE (Days 15-21)
+    # =========================================================================
+    15: {
+        "title": "🌿 PRE-VEG START - Post-Transplant Care",
+        "description": (
+            "DAY 15 - PRE-VEG BEGINS\n\n"
+            "POST-TRANSPLANT CARE:\n"
+            "• Light watering only\n"
+            "• No heavy nutrients yet\n"
+            "• Watch for transplant shock\n"
+            "• Keep humidity 60-70%\n\n"
+            "ENVIRONMENT:\n"
+            "• Light: 400-600 PPFD\n"
+            "• Temp: 75-80°F (24-27°C)\n"
+            "• Humidity: 60-70% RH\n"
+            "• VPD: 0.8-1.0 kPa\n\n"
+            "FEEDING (after 2-3 days):\n"
+            "• EC 1.0-1.2\n"
+            "• Athena Core + Grow\n"
+            "• Add Balance for calcium\n"
+            "• pH Down as needed (5.8-6.2)\n\n"
+            "[Source: Athena Handbook, Veg Protocol]"
+        ),
+        "stage": PHASE_PREVEG,
+        "category": "milestone",
+        "priority": "high",
+        "duration_hours": 1,
+    },
+    17: {
+        "title": "🐛 Pre-Veg IPM Spray",
+        "description": (
+            "PRE-VEG - IPM APPLICATION\n\n"
+            "SPRAY PROTOCOL:\n"
+            "• Full coverage IPM spray\n"
+            "• Include undersides of leaves\n"
+            "• Spray during lights-off\n\n"
+            "PLANT CHECK:\n"
+            "□ Recovery from transplant\n"
+            "□ New growth appearing\n"
+            "□ Root establishment\n"
+            "□ No pest issues\n\n"
+            "FEEDING CHECK:\n"
+            "□ Begin regular feeding schedule\n"
+            "□ EC 1.0-1.2\n"
+            "□ Monitor runoff\n\n"
+            "[Source: Athena Handbook, IPM Protocol]"
+        ),
+        "stage": PHASE_PREVEG,
+        "category": "ipm",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    21: {
+        "title": "✅ PRE-VEG COMPLETE - Ready for Early Veg",
+        "description": (
+            "DAY 21 - PRE-VEG COMPLETE\n\n"
+            "TRANSITION TO EARLY VEG:\n"
+            "□ Plants established and growing\n"
+            "□ Root system developing well\n"
+            "□ Ready for increased feeding\n"
+            "□ Can increase light intensity\n\n"
+            "EARLY VEG SETUP:\n"
+            "• Increase EC to 1.5-1.8\n"
+            "• Light: 600-800 PPFD\n"
+            "• Begin training if desired\n"
+            "• Continue IPM protocol\n\n"
+            "[Source: Athena Handbook, Veg Protocol]"
+        ),
+        "stage": PHASE_PREVEG,
+        "category": "milestone",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    # =========================================================================
+    # EARLY VEG STAGE (Days 22-35)
+    # =========================================================================
+    22: {
+        "title": "🌿 EARLY VEG START - Growth Phase",
+        "description": (
+            "DAY 22 - EARLY VEG BEGINS\n\n"
+            "GROWTH PHASE:\n"
+            "• Plants entering rapid growth\n"
+            "• Increase nutrients accordingly\n"
+            "• Begin training techniques\n\n"
+            "ENVIRONMENT:\n"
+            "• Light: 600-800 PPFD\n"
+            "• Temp: 75-82°F (24-28°C)\n"
+            "• Humidity: 55-65% RH\n"
+            "• VPD: 1.0-1.2 kPa\n\n"
+            "FEEDING:\n"
+            "• EC 1.5-1.8\n"
+            "• Athena Core + Grow\n"
+            "• Balance for calcium\n"
+            "• pH Down as needed\n"
+            "• Cleanse weekly (optional)\n\n"
+            "TRAINING OPTIONS:\n"
+            "• Topping/FIMing\n"
+            "• LST (Low Stress Training)\n"
+            "• Scrog setup\n\n"
+            "[Source: Athena Handbook, Veg Protocol]"
+        ),
+        "stage": PHASE_EARLY_VEG,
+        "category": "milestone",
+        "priority": "high",
+        "duration_hours": 1,
+    },
+    24: {
+        "title": "🐛 Early Veg IPM Spray #1",
+        "description": (
+            "EARLY VEG - IPM APPLICATION\n\n"
+            "SPRAY PROTOCOL:\n"
+            "• Full coverage IPM\n"
+            "• Plants growing fast - thorough coverage\n"
+            "• Check for any pest pressure\n\n"
+            "GROWTH CHECK:\n"
+            "□ Vigorous new growth\n"
+            "□ Healthy green color\n"
+            "□ No deficiencies\n"
+            "□ Training progress\n\n"
+            "[Source: Athena Handbook, IPM Protocol]"
+        ),
+        "stage": PHASE_EARLY_VEG,
+        "category": "ipm",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    28: {
+        "title": "🐛 Early Veg IPM Spray #2 + Training Check",
+        "description": (
+            "EARLY VEG - WEEK 4 CHECK\n\n"
+            "IPM APPLICATION:\n"
+            "• Continue IPM protocol\n"
+            "• Rotate products if needed\n\n"
+            "TRAINING CHECK:\n"
+            "□ Adjust ties/clips\n"
+            "□ Check canopy evenness\n"
+            "□ Second topping if needed\n"
+            "□ Remove lower growth\n\n"
+            "FEEDING CHECK:\n"
+            "□ EC 1.8 target\n"
+            "□ Plants responding well?\n"
+            "□ Any deficiency signs?\n\n"
+            "[Source: Athena Handbook, Veg Protocol]"
+        ),
+        "stage": PHASE_EARLY_VEG,
+        "category": "ipm",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    32: {
+        "title": "🐛 Early Veg IPM Spray #3",
+        "description": (
+            "EARLY VEG - IPM APPLICATION\n\n"
+            "SPRAY PROTOCOL:\n"
+            "• Continue IPM coverage\n"
+            "• Plants getting larger\n"
+            "• Ensure full coverage\n\n"
+            "PLANT STATUS:\n"
+            "□ Good branching structure\n"
+            "□ Multiple tops developing\n"
+            "□ Ready for late veg soon\n\n"
+            "[Source: Athena Handbook, IPM Protocol]"
+        ),
+        "stage": PHASE_EARLY_VEG,
+        "category": "ipm",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    35: {
+        "title": "✅ EARLY VEG COMPLETE - Ready for Late Veg",
+        "description": (
+            "DAY 35 - EARLY VEG COMPLETE\n\n"
+            "TRANSITION TO LATE VEG:\n"
+            "□ Good plant structure established\n"
+            "□ Multiple tops/branches\n"
+            "□ Healthy root system\n"
+            "□ Ready for final veg push\n\n"
+            "LATE VEG SETUP:\n"
+            "• Increase EC to 2.0-2.2\n"
+            "• Light: 800-1000 PPFD\n"
+            "• Final training/shaping\n"
+            "• Prepare for flower transition\n\n"
+            "[Source: Athena Handbook, Veg Protocol]"
+        ),
+        "stage": PHASE_EARLY_VEG,
+        "category": "milestone",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    # =========================================================================
+    # LATE VEG STAGE (Days 36-49) - Ready for Flower
+    # =========================================================================
+    36: {
+        "title": "🌿 LATE VEG START - Final Growth Phase",
+        "description": (
+            "DAY 36 - LATE VEG BEGINS\n\n"
+            "FINAL VEG PHASE:\n"
+            "• Plants at 50-70% final size\n"
+            "• Last chance for major training\n"
+            "• Building structure for flower\n\n"
+            "ENVIRONMENT:\n"
+            "• Light: 800-1000 PPFD\n"
+            "• Temp: 75-82°F (24-28°C)\n"
+            "• Humidity: 50-60% RH\n"
+            "• VPD: 1.0-1.3 kPa\n\n"
+            "FEEDING:\n"
+            "• EC 2.0-2.2\n"
+            "• Athena Core + Grow (full strength)\n"
+            "• Balance for calcium\n"
+            "• pH Down as needed\n\n"
+            "FLOWER PREP:\n"
+            "• Assess which plants ready\n"
+            "• Plan flower room timing\n"
+            "• Coordinate with flower schedule\n\n"
+            "[Source: Athena Handbook, Veg Protocol]"
+        ),
+        "stage": PHASE_LATE_VEG,
+        "category": "milestone",
+        "priority": "high",
+        "duration_hours": 1,
+    },
+    38: {
+        "title": "🐛 Late Veg IPM Spray #1",
+        "description": (
+            "LATE VEG - IPM APPLICATION\n\n"
+            "SPRAY PROTOCOL:\n"
+            "• Thorough IPM coverage\n"
+            "• Critical before flower!\n"
+            "• Check all plants carefully\n\n"
+            "PRE-FLOWER CHECK:\n"
+            "□ No pest issues\n"
+            "□ Plants healthy\n"
+            "□ Structure ready for flower\n"
+            "□ Size appropriate\n\n"
+            "[Source: Athena Handbook, IPM Protocol]"
+        ),
+        "stage": PHASE_LATE_VEG,
+        "category": "ipm",
+        "priority": "high",
+        "duration_hours": 1,
+    },
+    42: {
+        "title": "✂️ Late Veg Defoliation + IPM",
+        "description": (
+            "LATE VEG - DEFOLIATION\n\n"
+            "DEFOLIATION PROTOCOL:\n"
+            "• Remove lower 1/3 growth\n"
+            "• Clean up interior\n"
+            "• Improve airflow\n"
+            "• Prepare for flower\n\n"
+            "IPM APPLICATION:\n"
+            "• Full coverage spray\n"
+            "• Last major spray before flower\n\n"
+            "FLOWER READINESS:\n"
+            "□ Plants at target size?\n"
+            "□ Structure finalized?\n"
+            "□ Flower room available?\n"
+            "□ Plan move date\n\n"
+            "[Source: Athena Handbook, Veg Protocol]"
+        ),
+        "stage": PHASE_LATE_VEG,
+        "category": "defoliation",
+        "priority": "high",
+        "duration_hours": 2,
+    },
+    46: {
+        "title": "🐛 Late Veg Final IPM Spray",
+        "description": (
+            "LATE VEG - FINAL IPM\n\n"
+            "⚠️ LAST IPM BEFORE FLOWER!\n\n"
+            "SPRAY PROTOCOL:\n"
+            "• Thorough final spray\n"
+            "• Check every plant\n"
+            "• No pests going to flower!\n\n"
+            "FINAL PREP:\n"
+            "□ Plants pest-free\n"
+            "□ Ready for flower room\n"
+            "□ Coordinate timing\n\n"
+            "[Source: Athena Handbook, IPM Protocol]"
+        ),
+        "stage": PHASE_LATE_VEG,
+        "category": "ipm",
+        "priority": "high",
+        "duration_hours": 1,
+    },
+    49: {
+        "title": "🌸 READY FOR FLOWER - Move to Flower Room",
+        "description": (
+            "DAY 49 - VEG COMPLETE\n\n"
+            "🎉 PLANTS READY FOR FLOWER! 🎉\n\n"
+            "MOVE TO FLOWER:\n"
+            "• Plants at ideal size\n"
+            "• Structure optimized\n"
+            "• Pest-free and healthy\n"
+            "• Ready for 12/12 flip\n\n"
+            "TRANSITION CHECKLIST:\n"
+            "□ Select destination flower room\n"
+            "□ Move plants carefully\n"
+            "□ Update batch status\n"
+            "□ Link to flower room cycle\n\n"
+            "EXPECTED STRETCH:\n"
+            "• Plants will 2-3x in height\n"
+            "• Plan spacing accordingly\n"
+            "• First 3 weeks of flower\n\n"
+            "[Source: Athena Handbook, Veg Protocol]"
+        ),
+        "stage": PHASE_LATE_VEG,
+        "category": "milestone",
+        "priority": "critical",
+        "duration_hours": 2,
+    },
+}
+
+# Mother Plant Schedule - Ongoing maintenance tasks
+MOTHER_SCHEDULE: Final = {
+    # Weekly tasks for mother plants
+    7: {
+        "title": "🌿 Mother Weekly Maintenance",
+        "description": (
+            "MOTHER PLANT - WEEKLY CARE\n\n"
+            "MAINTENANCE TASKS:\n"
+            "□ Light pruning/shaping\n"
+            "□ Remove yellowing leaves\n"
+            "□ Check for pests\n"
+            "□ Take cuttings if needed\n\n"
+            "FEEDING:\n"
+            "• EC 1.8-2.0 (moderate)\n"
+            "• Athena Core + Grow\n"
+            "• Balance for calcium\n"
+            "• Cleanse flush recommended\n\n"
+            "ENVIRONMENT:\n"
+            "• 18/6 light cycle\n"
+            "• 600-800 PPFD\n"
+            "• 70-75°F (21-24°C)\n"
+            "• 50-60% RH\n\n"
+            "[Source: Athena Handbook, Mother Care]"
+        ),
+        "stage": PHASE_MOTHER,
+        "category": "maintenance",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    14: {
+        "title": "🐛 Mother Bi-Weekly IPM",
+        "description": (
+            "MOTHER PLANT - IPM APPLICATION\n\n"
+            "SPRAY PROTOCOL:\n"
+            "• Full coverage IPM spray\n"
+            "• Mothers are pest reservoirs!\n"
+            "• Keep them clean\n\n"
+            "HEALTH CHECK:\n"
+            "□ Overall plant vigor\n"
+            "□ Root health (if visible)\n"
+            "□ Any deficiencies\n"
+            "□ Cutting quality\n\n"
+            "[Source: Athena Handbook, IPM Protocol]"
+        ),
+        "stage": PHASE_MOTHER,
+        "category": "ipm",
+        "priority": "medium",
+        "duration_hours": 1,
+    },
+    28: {
+        "title": "🔄 Mother Monthly Reset",
+        "description": (
+            "MOTHER PLANT - MONTHLY MAINTENANCE\n\n"
+            "MONTHLY TASKS:\n"
+            "□ Heavy pruning if needed\n"
+            "□ Root pruning (if rootbound)\n"
+            "□ Repot if necessary\n"
+            "□ Full system flush\n\n"
+            "ASSESSMENT:\n"
+            "□ Mother still vigorous?\n"
+            "□ Cutting quality good?\n"
+            "□ Consider replacement?\n"
+            "□ Genetics still desired?\n\n"
+            "CLEANSE FLUSH:\n"
+            "• Run Athena Cleanse\n"
+            "• Clear salt buildup\n"
+            "• Reset medium EC\n\n"
+            "[Source: Athena Handbook, Mother Care]"
+        ),
+        "stage": PHASE_MOTHER,
+        "category": "maintenance",
+        "priority": "medium",
+        "duration_hours": 2,
     },
 }

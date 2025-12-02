@@ -1,0 +1,51 @@
+# Veg Room Status Card
+# Shows batch overview and stage breakdown
+type: vertical-stack
+cards:
+  - type: custom:mushroom-title-card
+    title: "🌱 {{ states('sensor.veg_room_status') }}"
+    subtitle: >-
+      {{ state_attr('sensor.veg_room_status', 'total_plants') }} plants |
+      EC {{ state_attr('sensor.veg_room_status', 'recommended_ec') }}
+
+  - type: entities
+    entities:
+      - entity: sensor.veg_room_status
+        name: Room Status
+        icon: mdi:sprout-outline
+      - entity: sensor.veg_room_active_batches
+        name: Active Batches
+        icon: mdi:package-variant
+      - entity: sensor.veg_room_next_task
+        name: Next Task
+        icon: mdi:calendar-check
+      - entity: sensor.veg_room_journal_entries
+        name: Journal Entries
+        icon: mdi:notebook
+
+  - type: markdown
+    content: >-
+      ## Batches by Stage
+
+      {% set batches = state_attr('sensor.veg_room_status', 'batches_by_stage') %}
+      {% if batches %}
+      | Stage | Batches | Plants |
+      |-------|---------|--------|
+      {% for stage, data in batches.items() %}
+      | {{ stage }} | {{ data.count }} | {{ data.plants }} |
+      {% endfor %}
+      {% else %}
+      No active batches
+      {% endif %}
+
+  - type: markdown
+    content: >-
+      ## Environmental Targets
+
+      | Parameter | Target |
+      |-----------|--------|
+      | Day Temp | {{ state_attr('sensor.veg_room_status', 'target_temp_day') }} |
+      | Night Temp | {{ state_attr('sensor.veg_room_status', 'target_temp_night') }} |
+      | Humidity | {{ state_attr('sensor.veg_room_status', 'target_humidity') }} |
+      | VPD | {{ state_attr('sensor.veg_room_status', 'target_vpd') }} |
+      | pH | {{ state_attr('sensor.veg_room_status', 'target_ph') }} |
