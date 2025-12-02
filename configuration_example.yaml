@@ -1,0 +1,144 @@
+# =============================================================================
+# GROW ROOM MANAGER - Example Configuration
+# =============================================================================
+# Add this to your configuration.yaml file
+# =============================================================================
+
+# Grow Room Manager Integration
+grow_room_manager:
+  rooms:
+    - room_id: f1
+      name: "Flower Room 1"
+      calendar_entity: calendar.grow_calendar
+      todo_entity: todo.grow_tasks_f1
+    - room_id: f2
+      name: "Flower Room 2"
+      calendar_entity: calendar.grow_calendar
+      todo_entity: todo.grow_tasks_f2
+    - room_id: f3
+      name: "Flower Room 3"
+      calendar_entity: calendar.grow_calendar
+      todo_entity: todo.grow_tasks_f3
+
+# =============================================================================
+# REQUIRED HELPERS
+# =============================================================================
+
+# Input datetime for setting start dates
+input_datetime:
+  f1_start_date:
+    name: "F1 Start Date"
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-start
+  f2_start_date:
+    name: "F2 Start Date"
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-start
+  f3_start_date:
+    name: "F3 Start Date"
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-start
+
+# Input text for journal notes
+input_text:
+  f1_journal_note:
+    name: "F1 Journal Note"
+    max: 255
+    icon: mdi:note-text
+  f2_journal_note:
+    name: "F2 Journal Note"
+    max: 255
+    icon: mdi:note-text
+  f3_journal_note:
+    name: "F3 Journal Note"
+    max: 255
+    icon: mdi:note-text
+
+# =============================================================================
+# COMMAND LINE SENSORS FOR JOURNAL HISTORY
+# =============================================================================
+# These sensors read the JSON journal files and format them for display
+
+command_line:
+  - sensor:
+      name: F1 Journal History
+      unique_id: f1_journal_history
+      command: >-
+        python3 -c "
+        import json
+        from pathlib import Path
+        try:
+            data = json.loads(Path('/config/grow_logs/f1.json').read_text())
+            entries = data[-10:][::-1]  # Last 10, reversed
+            for e in entries:
+                ts = e['timestamp'][:16].replace('T', ' ')
+                note = e['note'][:100]
+                img = f\"📷 [Photo]({e['image_url']})\" if e.get('image_url') else ''
+                print(f\"**{ts}**\\n{note} {img}\\n\")
+        except: print('No journal entries yet.')
+        "
+      scan_interval: 60
+      
+  - sensor:
+      name: F2 Journal History
+      unique_id: f2_journal_history
+      command: >-
+        python3 -c "
+        import json
+        from pathlib import Path
+        try:
+            data = json.loads(Path('/config/grow_logs/f2.json').read_text())
+            entries = data[-10:][::-1]
+            for e in entries:
+                ts = e['timestamp'][:16].replace('T', ' ')
+                note = e['note'][:100]
+                img = f\"📷 [Photo]({e['image_url']})\" if e.get('image_url') else ''
+                print(f\"**{ts}**\\n{note} {img}\\n\")
+        except: print('No journal entries yet.')
+        "
+      scan_interval: 60
+      
+  - sensor:
+      name: F3 Journal History
+      unique_id: f3_journal_history
+      command: >-
+        python3 -c "
+        import json
+        from pathlib import Path
+        try:
+            data = json.loads(Path('/config/grow_logs/f3.json').read_text())
+            entries = data[-10:][::-1]
+            for e in entries:
+                ts = e['timestamp'][:16].replace('T', ' ')
+                note = e['note'][:100]
+                img = f\"📷 [Photo]({e['image_url']})\" if e.get('image_url') else ''
+                print(f\"**{ts}**\\n{note} {img}\\n\")
+        except: print('No journal entries yet.')
+        "
+      scan_interval: 60
+
+# =============================================================================
+# LOCAL CALENDAR (if not using Google Calendar)
+# =============================================================================
+# Uncomment if you need a local calendar
+
+# calendar:
+#   - platform: local_calendar
+#     name: Grow Calendar
+
+# =============================================================================
+# LOCAL TODO LISTS
+# =============================================================================
+# Create these via UI: Settings > Devices & Services > Helpers > Add Helper > To-do list
+# Or use the local_todo integration:
+
+# todo:
+#   - platform: local_todo
+#     name: Grow Tasks F1
+#   - platform: local_todo
+#     name: Grow Tasks F2
+#   - platform: local_todo
+#     name: Grow Tasks F3

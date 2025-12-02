@@ -1,0 +1,12 @@
+{
+  "domain": "grow_room_manager",
+  "name": "Grow Room Manager",
+  "codeowners": ["@your-github-username"],
+  "config_flow": false,
+  "dependencies": ["calendar", "todo", "camera"],
+  "documentation": "https://github.com/your-username/grow_room_manager",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/your-username/grow_room_manager/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

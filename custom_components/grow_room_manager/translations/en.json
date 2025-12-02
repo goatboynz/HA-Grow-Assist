@@ -1,0 +1,71 @@
+{
+  "title": "Grow Room Manager",
+  "services": {
+    "add_journal_entry": {
+      "name": "Add Journal Entry",
+      "description": "Add a journal entry with optional camera snapshot for a grow room.",
+      "fields": {
+        "room_id": {
+          "name": "Room ID",
+          "description": "The ID of the grow room (e.g., f1, f2, f3)."
+        },
+        "note": {
+          "name": "Note",
+          "description": "The journal note text to save."
+        },
+        "image_entity": {
+          "name": "Camera Entity",
+          "description": "Optional camera entity to capture a snapshot from."
+        }
+      }
+    },
+    "generate_tasks": {
+      "name": "Generate Tasks",
+      "description": "Generate calendar events and todo items from the Athena Pro Line schedule.",
+      "fields": {
+        "room_id": {
+          "name": "Room ID",
+          "description": "The ID of the grow room (e.g., f1, f2, f3)."
+        },
+        "start_date": {
+          "name": "Start Date",
+          "description": "The first day of flower (Day 1) for this grow cycle."
+        }
+      }
+    },
+    "clear_tasks": {
+      "name": "Clear Tasks",
+      "description": "Clear all generated tasks for a grow room.",
+      "fields": {
+        "room_id": {
+          "name": "Room ID",
+          "description": "The ID of the grow room to clear tasks for."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "grow_status": {
+        "name": "Grow Status",
+        "state_attributes": {
+          "phase": {
+            "name": "Phase"
+          },
+          "recommended_ec": {
+            "name": "Recommended EC"
+          },
+          "target_dryback": {
+            "name": "Target Dryback"
+          },
+          "days_remaining": {
+            "name": "Days Remaining"
+          },
+          "harvest_window": {
+            "name": "Harvest Window"
+          }
+        }
+      }
+    }
+  }
+}
