@@ -1,241 +1,186 @@
 # Grow Room Manager Dashboard
-# Copy this to your Lovelace configuration or use as a separate dashboard
-#
-# PREREQUISITES:
+# ============================
+# 
+# BEFORE USING THIS DASHBOARD:
 # 1. Install Grow Room Manager integration via HACS
-# 2. Add rooms via Settings > Devices & Services > Add Integration > Grow Room Manager
-# 3. Create these helpers for each room (replace X with room number):
-#    - input_datetime.fX_start_date (date only)
-#    - input_text.fX_journal_note
-# 4. Create a calendar entity (e.g., via Local Calendar integration)
-# 5. Create todo list entities for each room (via Local To-do integration)
+# 2. Create these helpers in configuration.yaml or via UI:
+#
+#    input_datetime:
+#      f1_start_date:
+#        name: "F1 Start Date"
+#        has_date: true
+#        has_time: false
+#
+#    input_text:
+#      f1_journal_note:
+#        name: "F1 Journal Note"
+#        max: 255
+#
+# 3. Create a Local Calendar: Settings > Devices > Add Integration > Local Calendar
+# 4. Create Local To-do lists: Settings > Devices > Add Integration > Local To-do
+# 5. Optionally add rooms via: Settings > Devices > Add Integration > Grow Room Manager
+#
+# CUSTOMIZE: Replace entity IDs below with your actual entities
 
 title: Grow Room Manager
 views:
-  - title: Overview
-    path: overview
-    icon: mdi:cannabis
-    cards:
-      # Room Status Cards
-      - type: horizontal-stack
-        cards:
-          - type: entity
-            entity: sensor.flower_room_1_grow_status
-            name: F1 Status
-            icon: mdi:flower
-          - type: entity
-            entity: sensor.flower_room_2_grow_status
-            name: F2 Status
-            icon: mdi:flower
-          - type: entity
-            entity: sensor.flower_room_3_grow_status
-            name: F3 Status
-            icon: mdi:flower
-
-      # Quick Actions
-      - type: markdown
-        title: Quick Start Guide
-        content: |
-          ## How to Use
-          1. **Set Start Date**: Enter the flip date (Day 1 of flower)
-          2. **Generate Tasks**: Click to create 84 days of tasks
-          3. **Track Progress**: Sensor shows current day and phase
-          4. **Journal**: Add notes and photos throughout the grow
-          
-          ## Current Phase Targets
-          | Phase | Days | EC | Dryback |
-          |-------|------|-----|---------|
-          | Stretch | 1-21 | 3.0 | 20-25% |
-          | Bulk | 22-55 | 3.0 | 30-40% |
-          | Finish | 56-84 | 1.5 | 40-50% |
-
   - title: F1 Room
     path: f1
     icon: mdi:numeric-1-circle
     cards:
-      # Status Card
+      # Instructions Card
       - type: markdown
-        title: F1 - Flower Room 1
+        title: "🌿 Flower Room 1"
         content: |
-          **Status:** {{ states('sensor.flower_room_1_grow_status') }}
-          **Phase:** {{ state_attr('sensor.flower_room_1_grow_status', 'phase') }}
-          **Target EC:** {{ state_attr('sensor.flower_room_1_grow_status', 'recommended_ec') }}
-          **Dryback:** {{ state_attr('sensor.flower_room_1_grow_status', 'target_dryback') }}
-          **Days to Harvest:** {{ state_attr('sensor.flower_room_1_grow_status', 'days_remaining') }}
-          {% if state_attr('sensor.flower_room_1_grow_status', 'harvest_window') %}
-          🌿 **HARVEST WINDOW OPEN** 🌿
-          {% endif %}
+          ## Quick Start
+          1. Set the **Start Date** below (Day 1 of flower/flip day)
+          2. Click **Generate Tasks** to create your 84-day schedule
+          3. Tasks will appear in your calendar and todo list
+          
+          ---
+          
+          **Need to create helpers first?** Add these to configuration.yaml:
+          ```yaml
+          input_datetime:
+            f1_start_date:
+              name: "F1 Start Date"
+              has_date: true
+              has_time: false
+          ```
 
-      # Start Date & Task Generation
+      # Start Date Input
       - type: entities
-        title: Cycle Management
+        title: "📅 Cycle Settings"
         entities:
           - entity: input_datetime.f1_start_date
             name: Start Date (Day 1 of Flower)
 
-      - type: horizontal-stack
+      # Generate Tasks Button - Uses service directly with entity selectors
+      - type: vertical-stack
+        title: "⚡ Actions"
         cards:
-          - type: button
-            name: Generate Tasks
-            icon: mdi:calendar-plus
-            tap_action:
-              action: call-service
-              service: grow_room_manager.generate_tasks
-              service_data:
-                room_id: f1
-                start_date: "{{ states('input_datetime.f1_start_date') }}"
-                calendar_entity: calendar.grow_calendar
-                todo_entity: todo.grow_tasks_f1
-              confirmation:
-                text: Generate all 35 Athena schedule tasks for F1?
-
-      # Todo List
-      - type: todo-list
-        entity: todo.grow_tasks_f1
-        title: F1 Tasks
+          - type: markdown
+            content: |
+              **Generate Tasks:** Creates 35 scheduled tasks in your calendar and todo list.
+              
+              You must specify your calendar and todo entities below:
+          
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Generate Tasks
+                icon: mdi:calendar-plus
+                icon_height: 40px
+                tap_action:
+                  action: call-service
+                  service: grow_room_manager.generate_tasks
+                  service_data:
+                    room_id: "f1"
+                    start_date: "{{ states('input_datetime.f1_start_date') }}"
+                    calendar_entity: calendar.grow_calendar
+                    todo_entity: todo.f1_tasks
 
       # Journal Entry
-      - type: entities
-        title: Add Journal Entry
-        entities:
-          - entity: input_text.f1_journal_note
-            name: Note
-
-      - type: horizontal-stack
+      - type: vertical-stack
+        title: "📝 Journal"
         cards:
+          - type: entities
+            entities:
+              - entity: input_text.f1_journal_note
+                name: Note
+          
           - type: button
-            name: Save Note
+            name: Save Journal Entry
             icon: mdi:content-save
             tap_action:
               action: call-service
               service: grow_room_manager.add_journal_entry
               service_data:
-                room_id: f1
+                room_id: "f1"
                 note: "{{ states('input_text.f1_journal_note') }}"
-          - type: button
-            name: Save with Photo
-            icon: mdi:camera
-            tap_action:
-              action: call-service
-              service: grow_room_manager.add_journal_entry
-              service_data:
-                room_id: f1
-                note: "{{ states('input_text.f1_journal_note') }}"
-                image_entity: camera.grow_room_f1
 
-  - title: F2 Room
-    path: f2
-    icon: mdi:numeric-2-circle
+  - title: Services
+    path: services
+    icon: mdi:cog
     cards:
       - type: markdown
-        title: F2 - Flower Room 2
+        title: "🔧 Available Services"
         content: |
-          **Status:** {{ states('sensor.flower_room_2_grow_status') }}
-          **Phase:** {{ state_attr('sensor.flower_room_2_grow_status', 'phase') }}
-          **Target EC:** {{ state_attr('sensor.flower_room_2_grow_status', 'recommended_ec') }}
-          **Dryback:** {{ state_attr('sensor.flower_room_2_grow_status', 'target_dryback') }}
-          **Days to Harvest:** {{ state_attr('sensor.flower_room_2_grow_status', 'days_remaining') }}
+          ## grow_room_manager.generate_tasks
+          Generate 35 calendar events and todo items for an 84-day grow cycle.
+          
+          ```yaml
+          service: grow_room_manager.generate_tasks
+          data:
+            room_id: "f1"
+            start_date: "2024-12-01"
+            calendar_entity: calendar.your_calendar
+            todo_entity: todo.your_todo_list
+          ```
+          
+          ---
+          
+          ## grow_room_manager.add_journal_entry
+          Save a note (and optional camera snapshot) to the grow journal.
+          
+          ```yaml
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: "f1"
+            note: "Plants looking healthy today"
+            image_entity: camera.grow_room  # optional
+          ```
+          
+          ---
+          
+          ## grow_room_manager.set_start_date
+          Programmatically set the start date.
+          
+          ```yaml
+          service: grow_room_manager.set_start_date
+          data:
+            room_id: "f1"
+            start_date: "2024-12-01"
+          ```
+          
+          ---
+          
+          ## grow_room_manager.export_journal
+          Export journal to CSV or JSON file.
+          
+          ```yaml
+          service: grow_room_manager.export_journal
+          data:
+            room_id: "f1"
+            format: "csv"  # or "json"
+          ```
 
-      - type: entities
-        title: Cycle Management
-        entities:
-          - entity: input_datetime.f2_start_date
-            name: Start Date (Day 1 of Flower)
-
-      - type: horizontal-stack
-        cards:
-          - type: button
-            name: Generate Tasks
-            icon: mdi:calendar-plus
-            tap_action:
-              action: call-service
-              service: grow_room_manager.generate_tasks
-              service_data:
-                room_id: f2
-                start_date: "{{ states('input_datetime.f2_start_date') }}"
-                calendar_entity: calendar.grow_calendar
-                todo_entity: todo.grow_tasks_f2
-              confirmation:
-                text: Generate all 35 Athena schedule tasks for F2?
-
-      - type: todo-list
-        entity: todo.grow_tasks_f2
-        title: F2 Tasks
-
-      - type: entities
-        title: Add Journal Entry
-        entities:
-          - entity: input_text.f2_journal_note
-            name: Note
-
-      - type: horizontal-stack
-        cards:
-          - type: button
-            name: Save Note
-            icon: mdi:content-save
-            tap_action:
-              action: call-service
-              service: grow_room_manager.add_journal_entry
-              service_data:
-                room_id: f2
-                note: "{{ states('input_text.f2_journal_note') }}"
-
-  - title: F3 Room
-    path: f3
-    icon: mdi:numeric-3-circle
-    cards:
       - type: markdown
-        title: F3 - Flower Room 3
+        title: "📋 Required Helpers"
         content: |
-          **Status:** {{ states('sensor.flower_room_3_grow_status') }}
-          **Phase:** {{ state_attr('sensor.flower_room_3_grow_status', 'phase') }}
-          **Target EC:** {{ state_attr('sensor.flower_room_3_grow_status', 'recommended_ec') }}
-          **Dryback:** {{ state_attr('sensor.flower_room_3_grow_status', 'target_dryback') }}
-          **Days to Harvest:** {{ state_attr('sensor.flower_room_3_grow_status', 'days_remaining') }}
-
-      - type: entities
-        title: Cycle Management
-        entities:
-          - entity: input_datetime.f3_start_date
-            name: Start Date (Day 1 of Flower)
-
-      - type: horizontal-stack
-        cards:
-          - type: button
-            name: Generate Tasks
-            icon: mdi:calendar-plus
-            tap_action:
-              action: call-service
-              service: grow_room_manager.generate_tasks
-              service_data:
-                room_id: f3
-                start_date: "{{ states('input_datetime.f3_start_date') }}"
-                calendar_entity: calendar.grow_calendar
-                todo_entity: todo.grow_tasks_f3
-              confirmation:
-                text: Generate all 35 Athena schedule tasks for F3?
-
-      - type: todo-list
-        entity: todo.grow_tasks_f3
-        title: F3 Tasks
-
-      - type: entities
-        title: Add Journal Entry
-        entities:
-          - entity: input_text.f3_journal_note
-            name: Note
-
-      - type: horizontal-stack
-        cards:
-          - type: button
-            name: Save Note
-            icon: mdi:content-save
-            tap_action:
-              action: call-service
-              service: grow_room_manager.add_journal_entry
-              service_data:
-                room_id: f3
-                note: "{{ states('input_text.f3_journal_note') }}"
+          Add these to your `configuration.yaml`:
+          
+          ```yaml
+          input_datetime:
+            f1_start_date:
+              name: "F1 Start Date"
+              has_date: true
+              has_time: false
+            f2_start_date:
+              name: "F2 Start Date"
+              has_date: true
+              has_time: false
+          
+          input_text:
+            f1_journal_note:
+              name: "F1 Journal Note"
+              max: 255
+            f2_journal_note:
+              name: "F2 Journal Note"
+              max: 255
+          ```
+          
+          Then restart Home Assistant.
 
   - title: Calendar
     path: calendar

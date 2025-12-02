@@ -1,69 +1,74 @@
 # =============================================================================
-# GROW ROOM MANAGER - Example Configuration
+# GROW ROOM MANAGER - Configuration Guide
 # =============================================================================
-# 
-# SETUP STEPS:
-# 1. Install the integration via HACS
-# 2. Go to Settings > Devices & Services > Add Integration
-# 3. Search for "Grow Room Manager" and add each room
-# 4. Add the helpers below to your configuration.yaml
-# 5. Create calendar and todo entities (see below)
-# 6. Restart Home Assistant
+#
+# STEP 1: Install the integration via HACS
+#         - Add custom repository: https://github.com/goatboynz/HA-Grow-Assist
+#         - Category: Integration
+#         - Download and restart Home Assistant
+#
+# STEP 2: Add the helpers below to your configuration.yaml
+#
+# STEP 3: Restart Home Assistant
+#
+# STEP 4: Create a Local Calendar (optional but recommended)
+#         - Settings > Devices & Services > Add Integration > Local Calendar
+#         - Name it "Grow Calendar"
+#
+# STEP 5: Create Local To-do lists (optional but recommended)
+#         - Settings > Devices & Services > Add Integration > Local To-do
+#         - Create lists named "F1 Tasks", "F2 Tasks", etc.
+#
+# STEP 6: (Optional) Add rooms via config flow for sensors
+#         - Settings > Devices & Services > Add Integration > Grow Room Manager
+#         - This creates status sensors for each room
 #
 # =============================================================================
 
 # =============================================================================
-# REQUIRED HELPERS - Add to configuration.yaml
+# REQUIRED: Input Helpers (add to configuration.yaml)
 # =============================================================================
 
-# Input datetime for setting start dates (one per room)
 input_datetime:
+  # Room F1
   f1_start_date:
     name: "F1 Start Date"
     has_date: true
     has_time: false
     icon: mdi:calendar-start
+  
+  # Room F2 (add more as needed)
   f2_start_date:
     name: "F2 Start Date"
     has_date: true
     has_time: false
     icon: mdi:calendar-start
+  
+  # Room F3
   f3_start_date:
     name: "F3 Start Date"
     has_date: true
     has_time: false
     icon: mdi:calendar-start
 
-# Input text for journal notes (one per room)
 input_text:
+  # Room F1
   f1_journal_note:
     name: "F1 Journal Note"
     max: 255
     icon: mdi:note-text
+  
+  # Room F2
   f2_journal_note:
     name: "F2 Journal Note"
     max: 255
     icon: mdi:note-text
+  
+  # Room F3
   f3_journal_note:
     name: "F3 Journal Note"
     max: 255
     icon: mdi:note-text
-
-# =============================================================================
-# OPTIONAL: Local Calendar (if not using Google Calendar)
-# =============================================================================
-# Go to Settings > Devices & Services > Add Integration > Local Calendar
-# Or add to configuration.yaml:
-
-# calendar:
-#   - platform: local_calendar
-#     name: Grow Calendar
-
-# =============================================================================
-# OPTIONAL: Local Todo Lists
-# =============================================================================
-# Go to Settings > Devices & Services > Add Integration > Local To-do
-# Create one list per room: "Grow Tasks F1", "Grow Tasks F2", "Grow Tasks F3"
 
 # =============================================================================
 # OPTIONAL: Debug Logging
@@ -75,22 +80,51 @@ logger:
     custom_components.grow_room_manager: debug
 
 # =============================================================================
-# SERVICE CALL EXAMPLES
+# HOW TO USE THE SERVICES
 # =============================================================================
-# 
-# Generate tasks for a room:
-# service: grow_room_manager.generate_tasks
-# data:
-#   room_id: f1
-#   start_date: "2024-12-01"
-#   calendar_entity: calendar.grow_calendar
-#   todo_entity: todo.grow_tasks_f1
 #
-# Add journal entry:
-# service: grow_room_manager.add_journal_entry
-# data:
-#   room_id: f1
-#   note: "Plants looking great today!"
-#   image_entity: camera.grow_room_f1  # optional
+# After restarting, go to Developer Tools > Services and try:
+#
+# 1. GENERATE TASKS:
+#    Service: grow_room_manager.generate_tasks
+#    Data:
+#      room_id: "f1"
+#      start_date: "2024-12-01"
+#      calendar_entity: calendar.grow_calendar
+#      todo_entity: todo.f1_tasks
+#
+# 2. ADD JOURNAL ENTRY:
+#    Service: grow_room_manager.add_journal_entry
+#    Data:
+#      room_id: "f1"
+#      note: "Day 1 - Flipped to 12/12, plants look healthy"
+#
+# 3. SET START DATE:
+#    Service: grow_room_manager.set_start_date
+#    Data:
+#      room_id: "f1"
+#      start_date: "2024-12-01"
+#
+# 4. EXPORT JOURNAL:
+#    Service: grow_room_manager.export_journal
+#    Data:
+#      room_id: "f1"
+#      format: "csv"
+#
+# =============================================================================
+# BUTTON CARD EXAMPLE (for dashboard)
+# =============================================================================
+#
+# type: button
+# name: Generate F1 Tasks
+# icon: mdi:calendar-plus
+# tap_action:
+#   action: call-service
+#   service: grow_room_manager.generate_tasks
+#   service_data:
+#     room_id: "f1"
+#     start_date: "{{ states('input_datetime.f1_start_date') }}"
+#     calendar_entity: calendar.grow_calendar
+#     todo_entity: todo.f1_tasks
 #
 # =============================================================================

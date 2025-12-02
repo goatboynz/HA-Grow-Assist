@@ -39,8 +39,12 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Grow Room Manager integration from YAML (legacy support)."""
+    """Set up the Grow Room Manager integration."""
     hass.data.setdefault(DOMAIN, {"rooms": {}})
+    
+    # Register services immediately so they're available even without config entries
+    await _async_register_services(hass)
+    
     return True
 
 
