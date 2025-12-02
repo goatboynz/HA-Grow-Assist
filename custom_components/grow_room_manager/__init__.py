@@ -62,7 +62,43 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # Register services immediately so they're available even without config entries
     await _async_register_services(hass)
     
+    # Register the panel (sidebar entry)
+    await _async_register_panel(hass)
+    
     return True
+
+
+async def _async_register_panel(hass: HomeAssistant) -> None:
+    """Register the Grow Room Manager panel in the sidebar."""
+    # Check if panel already registered
+    if "grow-rooms" in hass.data.get("frontend_panels", {}):
+        return
+    
+    try:
+        # Register static path for frontend files
+        hass.http.register_static_path(
+            "/grow_room_manager",
+            str(Path(__file__).parent / "frontend"),
+            cache_headers=False
+        )
+        
+        # Register custom panel
+        hass.components.frontend.async_register_built_in_panel(
+            component_name="custom",
+            sidebar_title="Grow Rooms",
+            sidebar_icon="mdi:cannabis",
+            frontend_url_path="grow-rooms",
+            config={
+                "_panel_custom": {
+                    "name": "grow-room-panel",
+                    "module_url": "/grow_room_manager/panel.js",
+                }
+            },
+            require_admin=False,
+        )
+        _LOGGER.info("Registered Grow Room Manager panel in sidebar")
+    except Exception as err:
+        _LOGGER.debug("Could not register panel: %s", err)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

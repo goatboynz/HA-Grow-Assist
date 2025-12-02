@@ -1,12 +1,12 @@
 {
   "domain": "grow_room_manager",
   "name": "Grow Room Manager",
-  "codeowners": ["@your-github-username"],
+  "codeowners": ["@goatboynz"],
   "config_flow": true,
-  "dependencies": [],
-  "documentation": "https://github.com/your-username/grow_room_manager",
+  "dependencies": ["frontend", "http"],
+  "documentation": "https://github.com/goatboynz/HA-Grow-Assist",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/your-username/grow_room_manager/issues",
+  "issue_tracker": "https://github.com/goatboynz/HA-Grow-Assist/issues",
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
