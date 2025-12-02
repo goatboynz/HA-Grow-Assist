@@ -216,17 +216,33 @@ data:
 
 ---
 
-## 🎨 Dashboard Cards
+## 🎨 Dashboard & Cards
 
-Pre-built cards available in `lovelace/cards/`:
+### Full Dashboard
 
-- `room_status_card.yaml` - Full room status display
-- `all_rooms_overview.yaml` - All rooms at a glance
-- `environmental_targets_card.yaml` - Temp, humidity, VPD targets
-- `next_task_card.yaml` - Upcoming task details
-- `journal_card.yaml` - Journal entries and quick add
-- `generate_tasks_card.yaml` - Task generation buttons
-- `feeding_calculator_card.yaml` - Athena nutrient calculator
+A complete dashboard is available at `lovelace/grow_room_dashboard.yaml` with:
+- Overview of all rooms
+- Individual room pages (F1, F2, F3, Veg)
+- Journal with quick-add buttons
+- Feeding calculator
+- Settings page
+- Athena Pro Line guide
+
+### Standalone Cards
+
+Copy individual cards from `lovelace/cards/` to your own dashboards:
+
+| Card | Description |
+|------|-------------|
+| `all_rooms_overview.yaml` | All rooms at a glance with progress gauges |
+| `room_status_card.yaml` | Single flower room status |
+| `veg_room_status_card.yaml` | Veg room with batch summary |
+| `next_task_card.yaml` | Upcoming tasks for all rooms |
+| `quick_journal_card.yaml` | Fast note entry buttons |
+| `feeding_calculator_card.yaml` | Nutrient recipes |
+| `journal_card.yaml` | Full journal interface |
+| `veg_batch_manager_card.yaml` | Veg batch management |
+| `generate_tasks_card.yaml` | Task generation buttons |
 
 ---
 

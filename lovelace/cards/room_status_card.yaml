@@ -1,49 +1,46 @@
 # =============================================================================
-# ROOM STATUS CARD
+# ROOM STATUS CARD - Single Room Overview
 # =============================================================================
-# Shows current day, phase, and targets for a single room
-# 
-# USAGE: Copy this card and replace "flower_room_1" with your room's sensor name
+# Shows status for one flower room. Change sensor names for your room.
+# Copy this card to any dashboard.
 # =============================================================================
 
 type: vertical-stack
 cards:
   - type: markdown
     content: |
-      # 🌿 {{ state_attr('sensor.flower_room_1_grow_status', 'room_name') }}
-      
-      {% set status = states('sensor.flower_room_1_grow_status') %}
-      {% set phase = state_attr('sensor.flower_room_1_grow_status', 'phase') %}
-      {% set week = state_attr('sensor.flower_room_1_grow_status', 'current_week') %}
-      {% set ec = state_attr('sensor.flower_room_1_grow_status', 'recommended_ec') %}
-      {% set dryback = state_attr('sensor.flower_room_1_grow_status', 'target_dryback') %}
-      {% set remaining = state_attr('sensor.flower_room_1_grow_status', 'days_remaining') %}
-      {% set harvest = state_attr('sensor.flower_room_1_grow_status', 'harvest_window') %}
-      
-      {% if status != 'Not Started' %}
-      ## {{ status }} | Week {{ week }}
-      ### {{ phase }} Phase
-      
-      {% if harvest %}
-      ## 🎉 HARVEST WINDOW OPEN! 🎉
-      {% endif %}
-      
-      | Target | Value |
-      |--------|-------|
-      | **EC** | {{ ec }} |
-      | **Dryback** | {{ dryback }} |
-      | **Days to Harvest** | {{ remaining }} |
+      ## 🌸 Flower Room 1
+      {% set s = 'sensor.flower_room_1_grow_status' %}
+      {% set status = states(s) %}
+      {% set phase = state_attr(s, 'phase') %}
+      {% set week = state_attr(s, 'current_week') %}
+      {% if status != 'Not Started' and status != 'unknown' %}
+      **{{ status }}** | Week {{ week }} | {{ phase }}
       {% else %}
-      ## Not Started
-      Set a start date to begin tracking.
+      ⏳ Not Started
       {% endif %}
 
   - type: gauge
     entity: sensor.flower_room_1_grow_progress
-    name: "Cycle Progress"
+    name: Progress
     min: 0
     max: 100
     severity:
-      green: 90
-      yellow: 50
+      green: 80
+      yellow: 40
       red: 0
+
+  - type: glance
+    entities:
+      - entity: sensor.flower_room_1_grow_status
+        name: Day
+      - entity: sensor.flower_room_1_next_task
+        name: Next Task
+
+  - type: markdown
+    content: |
+      | Target | Value |
+      |--------|-------|
+      | EC | {{ state_attr('sensor.flower_room_1_grow_status', 'recommended_ec') }} |
+      | Dryback | {{ state_attr('sensor.flower_room_1_grow_status', 'target_dryback') }} |
+      | Days Left | {{ state_attr('sensor.flower_room_1_grow_status', 'days_remaining') }} |

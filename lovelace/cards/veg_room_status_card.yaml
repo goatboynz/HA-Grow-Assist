@@ -1,34 +1,29 @@
-# Veg Room Status Card
-# Shows batch overview and stage breakdown
+# =============================================================================
+# VEG ROOM STATUS CARD - Veg Room Overview
+# =============================================================================
+# Shows veg room status with batch summary.
+# Copy this card to any dashboard.
+# =============================================================================
+
 type: vertical-stack
 cards:
-  - type: custom:mushroom-title-card
-    title: "🌱 {{ states('sensor.veg_room_status') }}"
-    subtitle: >-
-      {{ state_attr('sensor.veg_room_status', 'total_plants') }} plants |
-      EC {{ state_attr('sensor.veg_room_status', 'recommended_ec') }}
+  - type: markdown
+    content: |
+      ## 🌱 Veg Room
+      {% set s = 'sensor.veg_room_status' %}
+      **{{ states(s) }}** | {{ state_attr(s, 'total_plants') }} plants
 
-  - type: entities
+  - type: glance
     entities:
       - entity: sensor.veg_room_status
-        name: Room Status
-        icon: mdi:sprout-outline
+        name: Status
       - entity: sensor.veg_room_active_batches
-        name: Active Batches
-        icon: mdi:package-variant
-      - entity: sensor.veg_room_next_task
-        name: Next Task
-        icon: mdi:calendar-check
-      - entity: sensor.veg_room_journal_entries
-        name: Journal Entries
-        icon: mdi:notebook
+        name: Batches
 
   - type: markdown
     content: >-
-      ## Batches by Stage
-
       {% set batches = state_attr('sensor.veg_room_status', 'batches_by_stage') %}
-      {% if batches %}
+      {% if batches and batches | length > 0 %}
       | Stage | Batches | Plants |
       |-------|---------|--------|
       {% for stage, data in batches.items() %}
@@ -38,14 +33,29 @@ cards:
       No active batches
       {% endif %}
 
-  - type: markdown
-    content: >-
-      ## Environmental Targets
-
-      | Parameter | Target |
-      |-----------|--------|
-      | Day Temp | {{ state_attr('sensor.veg_room_status', 'target_temp_day') }} |
-      | Night Temp | {{ state_attr('sensor.veg_room_status', 'target_temp_night') }} |
-      | Humidity | {{ state_attr('sensor.veg_room_status', 'target_humidity') }} |
-      | VPD | {{ state_attr('sensor.veg_room_status', 'target_vpd') }} |
-      | pH | {{ state_attr('sensor.veg_room_status', 'target_ph') }} |
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "🌱 Clones"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_veg_batch
+          data:
+            room_id: veg
+            batch_name: "Clones {{ now().strftime('%b %d') }}"
+            start_date: "{{ now().strftime('%Y-%m-%d') }}"
+            stage: Clone
+            plant_count: 24
+            destination_room: f1
+      - type: button
+        name: "👑 Mother"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_veg_batch
+          data:
+            room_id: veg
+            batch_name: "Mother {{ now().strftime('%b %d') }}"
+            start_date: "{{ now().strftime('%Y-%m-%d') }}"
+            stage: Mother
+            plant_count: 1
+            destination_room: none

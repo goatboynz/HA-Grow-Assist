@@ -1,0 +1,85 @@
+# =============================================================================
+# QUICK JOURNAL CARD - Fast Note Entry
+# =============================================================================
+# Quick buttons to add common journal notes.
+# Copy this card to any dashboard.
+# =============================================================================
+
+type: vertical-stack
+cards:
+  - type: markdown
+    content: "## 📝 Quick Journal"
+
+  - type: markdown
+    content: "**F1**"
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "✅"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: f1
+            note: "All good"
+      - type: button
+        name: "💧"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: f1
+            note: "Fed"
+      - type: button
+        name: "🐛"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: f1
+            note: "IPM"
+      - type: button
+        name: "✂️"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: f1
+            note: "Pruned"
+
+  - type: markdown
+    content: "**Veg**"
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: "✅"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "All good"
+      - type: button
+        name: "💧"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "Fed"
+      - type: button
+        name: "🌱"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "Clones checked"
+      - type: button
+        name: "✂️"
+        tap_action:
+          action: call-service
+          service: grow_room_manager.add_journal_entry
+          data:
+            room_id: veg
+            note: "Cuttings taken"

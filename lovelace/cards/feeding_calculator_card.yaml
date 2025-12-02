@@ -1,127 +1,56 @@
 # =============================================================================
-# ATHENA PRO LINE FEEDING CALCULATOR CARD
+# FEEDING CALCULATOR CARD - Nutrient Recipes
 # =============================================================================
-# Shows nutrient amounts based on current phase and tank size
-# Supports both Flower and Veg rooms
-#
-# USAGE: Replace sensor names with your room's sensors
+# Shows current feeding recipe based on room phase.
+# Copy this card to any dashboard.
 # =============================================================================
 
 type: vertical-stack
 cards:
-  - type: custom:mushroom-title-card
-    title: "🧪 Athena Feeding Calculator"
-    subtitle: "Nutrient recipes by phase"
-
-  # Flower Room Calculator
-  - type: conditional
-    conditions:
-      - entity: sensor.flower_room_1_grow_status
-        state_not: "unavailable"
-    card:
-      type: markdown
-      content: |
-        ## 🌸 Flower Room
-        
-        {% set s = 'sensor.flower_room_1_grow_status' %}
-        {% set phase = state_attr(s, 'phase') %}
-        {% set ec = state_attr(s, 'recommended_ec') %}
-        {% set day = state_attr(s, 'current_day') %}
-        
-        {% if phase and phase != 'Not Started' %}
-        **Phase: {{ phase }}** | Day {{ day }} | Target EC: {{ ec }}
-        
-        {% if phase == 'Stretch' or phase == 'Bulk' %}
-        ### Core + Bloom Recipe
-        
-        | Tank | Core | Bloom | Total |
-        |------|------|-------|-------|
-        | 20L | 16g | 16g | 32g |
-        | 50L | 40g | 40g | 80g |
-        | 100L | 79g | 79g | 158g |
-        | 200L | 158g | 158g | 316g |
-        | 500L | 395g | 395g | 790g |
-        
-        **Target:** EC 3.0 | pH 5.8-6.0
-        
-        {% elif phase == 'Finish' %}
-        ### Fade Recipe (Zero Nitrogen)
-        
-        | Tank | Fade | Cleanse |
-        |------|------|---------|
-        | 20L | 16g | 5g |
-        | 50L | 40g | 13g |
-        | 100L | 79g | 26g |
-        | 200L | 158g | 52g |
-        | 500L | 395g | 130g |
-        
-        **Target:** EC 1.5 | pH 5.8-6.0
-        {% endif %}
-        {% else %}
-        Set a start date to see recommendations
-        {% endif %}
-
-  # Veg Room Calculator
-  - type: conditional
-    conditions:
-      - entity: sensor.veg_room_status
-        state_not: "unavailable"
-    card:
-      type: markdown
-      content: |
-        ## 🌱 Veg Room
-        
-        {% set s = 'sensor.veg_room_status' %}
-        {% set ec = state_attr(s, 'recommended_ec') %}
-        {% set stage = state_attr(s, 'most_advanced_stage') %}
-        
-        {% if stage %}
-        **Most Advanced Stage: {{ stage }}** | Recommended EC: {{ ec }}
-        {% endif %}
-        
-        ### Veg Feeding Chart (per gallon)
-        
-        | Stage | Core | Grow | Balance | EC |
-        |-------|------|------|---------|-----|
-        | Clone | 1g | 1g | 0.5g | 0.8 |
-        | Pre-Veg | 1.5g | 1.5g | 0.5g | 1.2 |
-        | Early Veg | 2g | 2g | 1g | 1.8 |
-        | Late Veg | 2.5g | 2.5g | 1g | 2.2 |
-        | Mother | 2g | 2g | 1g | 2.0 |
-        
-        ### Tank Recipes (100L example)
-        
-        | Stage | Core | Grow | Balance | pH Down |
-        |-------|------|------|---------|---------|
-        | Clone | 26g | 26g | 13g | As needed |
-        | Pre-Veg | 40g | 40g | 13g | As needed |
-        | Early Veg | 53g | 53g | 26g | As needed |
-        | Late Veg | 66g | 66g | 26g | As needed |
-        | Mother | 53g | 53g | 26g | As needed |
-        
-        **Target pH:** 5.8-6.2
+  - type: markdown
+    content: "## 🧪 Feeding Calculator"
 
   - type: markdown
     content: |
-      ---
-      ### 📋 Mixing Instructions
+      {% set s = 'sensor.flower_room_1_grow_status' %}
+      {% set phase = state_attr(s, 'phase') %}
+      {% set ec = state_attr(s, 'recommended_ec') %}
+      {% set day = state_attr(s, 'current_day') %}
       
-      1. Fill tank with RO/filtered water
-      2. Add Core first, stir well
-      3. Add Grow (veg) or Bloom (flower)
-      4. Add Balance (veg) for calcium
-      5. Check EC and adjust
-      6. Add pH Down to reach 5.8-6.2
-      7. Let mix 15 minutes before use
+      **F1:** {% if phase and phase != 'Not Started' %}Day {{ day }} - {{ phase }} (EC {{ ec }}){% else %}Not started{% endif %}
       
-      ---
+      {% set s2 = 'sensor.flower_room_2_grow_status' %}
+      {% set phase2 = state_attr(s2, 'phase') %}
+      {% set day2 = state_attr(s2, 'current_day') %}
+      **F2:** {% if phase2 and phase2 != 'Not Started' %}Day {{ day2 }} - {{ phase2 }}{% else %}Not started{% endif %}
       
-      ### 💡 Product Notes
+      {% set s3 = 'sensor.flower_room_3_grow_status' %}
+      {% set phase3 = state_attr(s3, 'phase') %}
+      {% set day3 = state_attr(s3, 'current_day') %}
+      **F3:** {% if phase3 and phase3 != 'Not Started' %}Day {{ day3 }} - {{ phase3 }}{% else %}Not started{% endif %}
+
+  - type: markdown
+    content: |
+      ### Flower: Core + Bloom (EC 3.0)
+      | Tank | Core | Bloom |
+      |------|------|-------|
+      | 50L | 40g | 40g |
+      | 100L | 79g | 79g |
+      | 200L | 158g | 158g |
       
-      - **Core**: Base nutrients (N-P-K)
-      - **Grow**: Nitrogen boost for veg
-      - **Bloom**: Phosphorus/potassium for flower
-      - **Balance**: Calcium/magnesium supplement
-      - **pH Down**: Phosphoric acid for pH adjustment
-      - **Cleanse**: Salt/mineral flush (weekly)
-      - **Fade**: Zero-nitrogen finish formula
+      ### Flower: Fade (EC 1.5)
+      | Tank | Fade |
+      |------|------|
+      | 50L | 40g |
+      | 100L | 79g |
+      | 200L | 158g |
+
+  - type: markdown
+    content: |
+      ### Veg: Core + Grow
+      | Stage | Core/gal | Grow/gal | EC |
+      |-------|----------|----------|-----|
+      | Clone | 1g | 1g | 0.8 |
+      | Pre-Veg | 1.5g | 1.5g | 1.2 |
+      | Early Veg | 2g | 2g | 1.8 |
+      | Late Veg | 2.5g | 2.5g | 2.2 |

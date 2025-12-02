@@ -1,35 +1,31 @@
 # =============================================================================
-# NEXT TASK CARD
+# NEXT TASK CARD - Upcoming Tasks for All Rooms
 # =============================================================================
-# Shows the next scheduled task for a room
-#
-# USAGE: Replace "flower_room_1" with your room's sensor name
+# Shows next scheduled task for each room.
+# Copy this card to any dashboard.
 # =============================================================================
 
 type: entities
-title: "📋 Next Scheduled Task"
+title: "📋 Upcoming Tasks"
 show_header_toggle: false
 entities:
   - entity: sensor.flower_room_1_next_task
-    name: "Task"
-    icon: mdi:clipboard-check
-  - type: attribute
-    entity: sensor.flower_room_1_next_task
-    attribute: task_day
-    name: "Day"
-    icon: mdi:calendar
-  - type: attribute
-    entity: sensor.flower_room_1_next_task
-    attribute: task_date
-    name: "Date"
-    icon: mdi:calendar-today
-  - type: attribute
-    entity: sensor.flower_room_1_next_task
+    name: F1
+    icon: mdi:numeric-1-circle
+    secondary_info: attribute
     attribute: days_until
-    name: "Days Until"
-    icon: mdi:clock-outline
-  - type: attribute
-    entity: sensor.flower_room_1_next_task
-    attribute: priority
-    name: "Priority"
-    icon: mdi:alert-circle
+  - entity: sensor.flower_room_2_next_task
+    name: F2
+    icon: mdi:numeric-2-circle
+    secondary_info: attribute
+    attribute: days_until
+  - entity: sensor.flower_room_3_next_task
+    name: F3
+    icon: mdi:numeric-3-circle
+    secondary_info: attribute
+    attribute: days_until
+  - entity: sensor.veg_room_next_task
+    name: Veg
+    icon: mdi:sprout
+    secondary_info: attribute
+    attribute: days_until
