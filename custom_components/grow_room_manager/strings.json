@@ -4,18 +4,20 @@
     "step": {
       "user": {
         "title": "Add Grow Room",
-        "description": "Add a new grow room. Set the start date when you flip to flower.",
+        "description": "Add a new grow room. Set start date OR select a sensor that provides the date.",
         "data": {
           "room_id": "Room ID",
           "name": "Room Name",
-          "start_date": "Start Date (Day 1 of Flower)",
+          "start_date": "Start Date (fixed)",
+          "start_date_entity": "Start Date Sensor (dynamic)",
           "calendar_entity": "Calendar (optional)",
           "todo_entity": "Todo List (optional)"
         },
         "data_description": {
           "room_id": "Unique ID like f1, f2, f3",
           "name": "Display name for this room",
-          "start_date": "The day you flipped to 12/12 light cycle",
+          "start_date": "Fixed date - Day 1 of flower",
+          "start_date_entity": "Sensor or input_datetime that provides the start date",
           "calendar_entity": "Calendar to add scheduled tasks to",
           "todo_entity": "Todo list to add tasks to"
         }
@@ -29,10 +31,11 @@
     "step": {
       "init": {
         "title": "Room Settings",
-        "description": "Update room settings. Change the start date to begin a new cycle.",
+        "description": "Update room settings. Use either a fixed date OR a sensor entity.",
         "data": {
           "name": "Room Name",
-          "start_date": "Start Date (Day 1 of Flower)",
+          "start_date": "Start Date (fixed)",
+          "start_date_entity": "Start Date Sensor (dynamic)",
           "calendar_entity": "Calendar",
           "todo_entity": "Todo List"
         }

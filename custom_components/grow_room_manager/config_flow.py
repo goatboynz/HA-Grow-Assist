@@ -18,6 +18,7 @@ from .const import (
     CONF_CALENDAR_ENTITY,
     CONF_TODO_ENTITY,
     CONF_START_DATE,
+    CONF_START_DATE_ENTITY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,6 +53,7 @@ class GrowRoomManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_ROOM_ID: room_id,
                     CONF_ROOM_NAME: user_input[CONF_ROOM_NAME],
                     CONF_START_DATE: start_date,
+                    CONF_START_DATE_ENTITY: user_input.get(CONF_START_DATE_ENTITY, ""),
                     CONF_CALENDAR_ENTITY: user_input.get(CONF_CALENDAR_ENTITY, ""),
                     CONF_TODO_ENTITY: user_input.get(CONF_TODO_ENTITY, ""),
                 },
@@ -64,6 +66,12 @@ class GrowRoomManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_ROOM_ID, default="f1"): str,
                 vol.Required(CONF_ROOM_NAME, default="Flower Room 1"): str,
                 vol.Optional(CONF_START_DATE): selector.DateSelector(),
+                vol.Optional(CONF_START_DATE_ENTITY): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=["input_datetime", "sensor"],
+                        multiple=False
+                    )
+                ),
                 vol.Optional(CONF_CALENDAR_ENTITY): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="calendar")
                 ),
@@ -72,9 +80,6 @@ class GrowRoomManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
             }),
             errors=errors,
-            description_placeholders={
-                "room_id_desc": "Unique ID like f1, f2, f3",
-            },
         )
 
     @staticmethod
@@ -96,7 +101,7 @@ class GrowRoomManagerOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage the room options - this is where workers set the start date."""
+        """Manage the room options."""
         if user_input is not None:
             # Convert date to string for storage
             start_date = user_input.get(CONF_START_DATE)
@@ -107,6 +112,7 @@ class GrowRoomManagerOptionsFlow(config_entries.OptionsFlow):
             new_data = {
                 **self.config_entry.data,
                 CONF_START_DATE: start_date,
+                CONF_START_DATE_ENTITY: user_input.get(CONF_START_DATE_ENTITY, ""),
                 CONF_ROOM_NAME: user_input.get(CONF_ROOM_NAME, self.config_entry.data.get(CONF_ROOM_NAME)),
                 CONF_CALENDAR_ENTITY: user_input.get(CONF_CALENDAR_ENTITY, ""),
                 CONF_TODO_ENTITY: user_input.get(CONF_TODO_ENTITY, ""),
@@ -125,6 +131,7 @@ class GrowRoomManagerOptionsFlow(config_entries.OptionsFlow):
 
         # Get current values
         current_start = self.config_entry.data.get(CONF_START_DATE)
+        current_start_entity = self.config_entry.data.get(CONF_START_DATE_ENTITY, "")
         
         return self.async_show_form(
             step_id="init",
@@ -138,6 +145,15 @@ class GrowRoomManagerOptionsFlow(config_entries.OptionsFlow):
                     default=current_start if current_start else None
                 ): selector.DateSelector(),
                 vol.Optional(
+                    CONF_START_DATE_ENTITY,
+                    default=current_start_entity
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=["input_datetime", "sensor"],
+                        multiple=False
+                    )
+                ),
+                vol.Optional(
                     CONF_CALENDAR_ENTITY,
                     default=self.config_entry.data.get(CONF_CALENDAR_ENTITY, "")
                 ): selector.EntitySelector(
@@ -150,7 +166,4 @@ class GrowRoomManagerOptionsFlow(config_entries.OptionsFlow):
                     selector.EntitySelectorConfig(domain="todo")
                 ),
             }),
-            description_placeholders={
-                "room_name": self.config_entry.data.get(CONF_ROOM_NAME, "Room"),
-            },
         )

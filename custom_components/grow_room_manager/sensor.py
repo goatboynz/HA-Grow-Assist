@@ -18,6 +18,7 @@ from .const import (
     CONF_ROOM_ID,
     CONF_ROOM_NAME,
     CONF_START_DATE,
+    CONF_START_DATE_ENTITY,
     PHASE_STRETCH,
     PHASE_BULK,
     PHASE_FINISH,
@@ -28,6 +29,7 @@ from .const import (
     DRYBACK_BULK,
     DRYBACK_FINISH,
     ATHENA_SCHEDULE,
+    ATHENA_FEED_CHART,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -71,8 +73,22 @@ class GrowRoomBaseSensor(SensorEntity):
         self._start_date: date | None = None
 
     def _get_start_date(self) -> date | None:
-        """Get the start date from config entry."""
-        # Get from config entry data
+        """Get the start date from config entry or entity."""
+        # First check if there's a start date entity configured
+        start_date_entity = self._entry.data.get(CONF_START_DATE_ENTITY)
+        
+        if start_date_entity:
+            state = self.hass.states.get(start_date_entity)
+            if state and state.state not in (STATE_UNKNOWN, "unavailable", "unknown", None, ""):
+                try:
+                    date_str = state.state
+                    if "T" in date_str:
+                        date_str = date_str.split("T")[0]
+                    return datetime.strptime(date_str, "%Y-%m-%d").date()
+                except (ValueError, AttributeError):
+                    _LOGGER.debug("Could not parse date from entity %s", start_date_entity)
+        
+        # Fall back to static start date from config
         start_date_str = self._entry.data.get(CONF_START_DATE)
         
         if start_date_str:

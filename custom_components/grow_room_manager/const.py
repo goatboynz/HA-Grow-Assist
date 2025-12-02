@@ -33,6 +33,39 @@ SERVICE_EXPORT_JOURNAL: Final = "export_journal"
 SERVICE_SET_START_DATE: Final = "set_start_date"
 SERVICE_GET_TODAY_TASKS: Final = "get_today_tasks"
 
+# Athena Pro Line Feeding Recipes (grams per liter)
+# Based on Athena Pro Line feed charts
+ATHENA_FEED_CHART: Final = {
+    # Phase: {product: grams_per_liter}
+    PHASE_STRETCH: {
+        "core": 0.79,      # 3g per gallon = 0.79g/L
+        "bloom": 0.79,     # 3g per gallon = 0.79g/L
+        "cleanse": 0,      # Not used in stretch
+        "fade": 0,         # Not used in stretch
+        "target_ec": 3.0,
+        "target_ph": "5.8-6.0",
+    },
+    PHASE_BULK: {
+        "core": 0.79,      # 3g per gallon = 0.79g/L
+        "bloom": 0.79,     # 3g per gallon = 0.79g/L
+        "cleanse": 0,      # Optional weekly
+        "fade": 0,         # Not used in bulk
+        "target_ec": 3.0,
+        "target_ph": "5.8-6.0",
+    },
+    PHASE_FINISH: {
+        "core": 0,         # No core in finish
+        "bloom": 0,        # No bloom in finish
+        "cleanse": 0.26,   # 1g per gallon = 0.26g/L (optional flush)
+        "fade": 0.79,      # 3g per gallon = 0.79g/L
+        "target_ec": 1.5,
+        "target_ph": "5.8-6.0",
+    },
+}
+
+# Common tank sizes in liters
+TANK_SIZES: Final = [20, 50, 100, 200, 500, 1000]
+
 # Athena Pro Line Schedule - Maps day number to task info
 # Format: {day: {"title": str, "description": str, "category": str, "phase": str, ...}}
 ATHENA_SCHEDULE: Final = {

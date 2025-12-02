@@ -1,0 +1,79 @@
+# =============================================================================
+# ATHENA PRO LINE FEEDING CALCULATOR CARD
+# =============================================================================
+# Shows nutrient amounts based on current phase and tank size
+#
+# USAGE: Replace "flower_room_1" with your room's sensor name
+# =============================================================================
+
+type: vertical-stack
+cards:
+  - type: markdown
+    content: |
+      # 🧪 Athena Feeding Calculator
+      
+      {% set s = 'sensor.flower_room_1_grow_status' %}
+      {% set phase = state_attr(s, 'phase') %}
+      {% set ec = state_attr(s, 'recommended_ec') %}
+      {% set day = state_attr(s, 'current_day') %}
+      
+      {% if phase and phase != 'Not Started' %}
+      ## Current Phase: {{ phase }}
+      **Day {{ day }}** | Target EC: **{{ ec }}**
+      
+      ---
+      
+      {% if phase == 'Stretch' or phase == 'Bulk' %}
+      ### Athena Core + Bloom Recipe
+      
+      | Tank Size | Core | Bloom | Total |
+      |-----------|------|-------|-------|
+      | **20L** | 16g | 16g | 32g |
+      | **50L** | 40g | 40g | 80g |
+      | **100L** | 79g | 79g | 158g |
+      | **200L** | 158g | 158g | 316g |
+      | **500L** | 395g | 395g | 790g |
+      | **1000L** | 790g | 790g | 1580g |
+      
+      **Target:** EC 3.0 | pH 5.8-6.0
+      
+      {% elif phase == 'Finish' %}
+      ### Athena Fade Recipe (Zero Nitrogen)
+      
+      | Tank Size | Fade | Cleanse (optional) |
+      |-----------|------|-------------------|
+      | **20L** | 16g | 5g |
+      | **50L** | 40g | 13g |
+      | **100L** | 79g | 26g |
+      | **200L** | 158g | 52g |
+      | **500L** | 395g | 130g |
+      | **1000L** | 790g | 260g |
+      
+      **Target:** EC 1.5 | pH 5.8-6.0
+      
+      ⚠️ **Fade = Zero Nitrogen** - Promotes proper ripening
+      {% endif %}
+      
+      {% else %}
+      ## ⏳ Set a start date to see feeding recommendations
+      {% endif %}
+
+  - type: markdown
+    content: |
+      ---
+      ### 📋 Mixing Instructions
+      
+      1. Fill tank with RO/filtered water
+      2. Add nutrients while stirring
+      3. Check EC and adjust if needed
+      4. Adjust pH to 5.8-6.0
+      5. Let mix for 15 minutes before use
+      
+      ---
+      
+      ### 💡 Tips
+      
+      - Always add Core before Bloom
+      - Never mix concentrates directly
+      - Check EC of source water first
+      - Cleanse can be used weekly for line maintenance
